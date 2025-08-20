@@ -6,3 +6,9 @@ pydantic==2.11.7
 bleach==6.2.0
 pytest==8.4.1
 brotli==1.1.0
+# Phase 1 Advanced Content Extraction Dependencies
+lxml>=4.9.0
+cssselect>=1.2.0
+readability-lxml>=0.8.1
+python-dateutil>=2.8.2
+langdetect>=1.0.9

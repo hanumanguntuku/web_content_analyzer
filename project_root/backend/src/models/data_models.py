@@ -1,7 +1,23 @@
 from pydantic import BaseModel, HttpUrl
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+
+class ScrapedContent(BaseModel):
+    """Model for scraped content data with enhanced metadata"""
+    url: HttpUrl
+    final_url: HttpUrl
+    html: str
+    text: str
+    content_length: int
+    success: bool
+    error_message: Optional[str] = None
+    # Enhanced fields
+    metadata: Optional[Dict[str, Any]] = None
+    extraction_method: Optional[str] = None
+    confidence: Optional[float] = None
 
 class ScrapeResult(BaseModel):
+    """Legacy model for backwards compatibility"""
     url: HttpUrl
     html: str
     text: str
