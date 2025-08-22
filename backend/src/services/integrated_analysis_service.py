@@ -117,7 +117,7 @@ class IntegratedAnalysisService:
             processed_data = self.text_processor.process_content(
                 scraped_data.content, url, html=getattr(scraped_data, 'content', None)
             )
-            logger.info(f"🔄 Hanuman Processed data request for {processed_data}")
+
             # Convert dictionary to ProcessedContent object
             processed_content = ProcessedContent(
                 url=url,
@@ -146,7 +146,6 @@ class IntegratedAnalysisService:
                 images=processed_data.get('analysis', {}).get('images', []),
                 contact_information={'emails': processed_data.get('emails', []), 'phones': processed_data.get('phones', [])}
             )
-            logger.info(f"🔄 Hanuman Processed content for {processed_content}")
 
             # Step 3: Detect content type
             content_type, confidence, detection_details = await self.content_detection_service.detect_content_type(

@@ -8,6 +8,15 @@ from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum
 import logging
+
+# Enterprise logging setup
+logger = logging.getLogger("web_content_analyzer.models")
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 # Enums for structured data
 class ContentType(str, Enum):
     """Content types for classification"""
@@ -68,7 +77,9 @@ class URLAnalysisRequest(BaseModel):
         """Validate URL format and security"""
         url_str = str(v)
         if any(blocked in url_str.lower() for blocked in ['localhost', '127.0.0.1', '192.168.']):
+            logger.warning(f"Blocked attempt to analyze private/local URL: {url_str}")
             raise ValueError("Private/local URLs are not allowed")
+        logger.info(f"Validated URL for analysis: {url_str}")
         return v
 
 class AnalysisOptions(BaseModel):
@@ -131,7 +142,6 @@ class ProcessedContent(BaseModel):
     url: str = Field(..., description="Source URL")
     cleaned_text: str = Field(..., description="Cleaned and normalized text")
 
-    logging.getLogger(__name__).info(f"🔄 Hanuman Processed content in class data models {str}")
     keywords: List[Dict[str, Any]] = Field(default_factory=list, description="Extracted keywords")
     emails: List[str] = Field(default_factory=list, description="Email addresses")
     phones: List[str] = Field(default_factory=list, description="Phone numbers")
@@ -200,6 +210,9 @@ class TechnicalMetadata(BaseModel):
     framework: Optional[str] = Field(default=None, description="Detected framework")
 
 class AnalysisReport(BaseModel):
+    def __init__(self, **data):
+        super().__init__(**data)
+        logger.info(f"AnalysisReport created for URL: {self.url} | Status: {self.processing_status} | Time: {self.analysis_timestamp}")
     """Comprehensive analysis report"""
     # Basic Information
     url: str = Field(..., description="Analyzed URL")
