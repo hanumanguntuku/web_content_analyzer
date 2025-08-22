@@ -110,16 +110,13 @@ class IntegratedAnalysisService:
         """
         try:
             logger.info(f"🔍 Starting URL analysis for: {url}")
-            
             # Step 1: Scrape content
             scraped_data = await self.web_scraper.scrape_website(url)
-            
 
             # Step 2: Extract and process content
             processed_data = self.text_processor.process_content(
                 scraped_data.content, url, html=getattr(scraped_data, 'content', None)
             )
-            
             logger.info(f"🔄 Hanuman Processed data request for {processed_data}")
             # Convert dictionary to ProcessedContent object
             processed_content = ProcessedContent(
@@ -149,32 +146,38 @@ class IntegratedAnalysisService:
                 images=processed_data.get('analysis', {}).get('images', []),
                 contact_information={'emails': processed_data.get('emails', []), 'phones': processed_data.get('phones', [])}
             )
-
             logger.info(f"🔄 Hanuman Processed content for {processed_content}")
-            
+
             # Step 3: Detect content type
             content_type, confidence, detection_details = await self.content_detection_service.detect_content_type(
                 processed_content, url
             )
-            
-            # Step 4a: Call LLM for AI summary/insights
+
+            # Step 4a: Chunk content and call LLM for each chunk
             try:
-                from src.services.llm_service import OpenAILLMService
-                llm_service = OpenAILLMService()
-                ai_summary = await llm_service.analyze_content(
-                    outline=processed_data.get('outline', []),
-                    key_phrases=processed_data.get('key_phrases', []),
-                    summary=scraped_data.description or '',
-                    full_text=processed_data.get('cleaned_text', '')
-                )
+                from src.services.llm_service import GeminiLLMService
+                llm_service = GeminiLLMService()
+                chunks = self.text_processor.chunk_content_for_llm(processed_data.get('cleaned_text', ''))
+                chunk_summaries = []
+                for chunk in chunks:
+                    chunk_summary = await llm_service.analyze_content(
+                        outline=processed_data.get('outline', []),
+                        key_phrases=processed_data.get('key_phrases', []),
+                        summary=scraped_data.description or '',
+                        full_text=chunk['content']
+                    )
+                    chunk_summaries.append(chunk_summary)
+                # Aggregate summaries (simple join, can be improved)
+                ai_summary = '\n\n'.join(chunk_summaries)
             except Exception as e:
                 logger.error(f"LLM call failed: {str(e)}")
                 ai_summary = None
+                chunk_summaries = []
 
             analysis_report = await self.report_service.generate_analysis_report(
                 processed_content, scraped_data, url
             )
-            # Attach AI summary to report (if possible)
+            # Attach only AI summary to report metadata (no chunk_summaries)
             if hasattr(analysis_report, 'metadata') and isinstance(analysis_report.metadata, dict):
                 analysis_report.metadata['ai_summary'] = ai_summary
             else:
@@ -182,7 +185,6 @@ class IntegratedAnalysisService:
 
             logger.info(f"✅ Analysis completed for {url}")
             return analysis_report
-            
         except Exception as e:
             logger.error(f"❌ Analysis failed for {url}: {str(e)}")
             raise ProcessingException(f"URL analysis failed: {str(e)}")
