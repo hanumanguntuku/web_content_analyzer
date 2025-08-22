@@ -425,7 +425,7 @@ class IntegratedAnalysisService:
             report = AnalysisReport(
                 url=url,
                 title=getattr(extracted_content, 'title', '') or getattr(scraped_data, 'title', ''),
-                summary=getattr(processed_content, 'summary', ''),
+                description=getattr(processed_content, 'summary', ''),
                 keywords=getattr(processed_content, 'keywords', []),
                 content_type=getattr(scraped_data, 'content_type', 'text/html'),
                 language=getattr(processed_content, 'language', 'unknown'),

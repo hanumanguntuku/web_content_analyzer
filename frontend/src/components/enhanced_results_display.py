@@ -91,9 +91,14 @@ def render_content_analysis(analysis_report: Dict[str, Any]):
     
     # Summary
     summary = analysis_report.get("summary", "")
-    if summary:
+    ai_summary = analysis_report.get("metadata", {}).get("ai_summary", "")
+    if summary or ai_summary:
         st.markdown("### 📋 Content Summary")
-        st.info(summary)
+        if summary:
+            st.info(summary)
+        if ai_summary:
+            st.markdown("#### 🤖 AI-Generated Summary")
+            st.success(ai_summary)
     
     # Keywords
     keywords = analysis_report.get("keywords", [])

@@ -18,71 +18,68 @@ def format_analysis_results(results: Dict[str, Any]) -> Dict[str, Any]:
     if not results:
         return {}
     
-    # Extract content analysis data
+    # Robust extraction of content_analysis and technical_metadata
     content_analysis = results.get('content_analysis', {})
-    # Robustly extract content_type as a string
-    content_type = 'unknown'
-    if isinstance(content_analysis, dict):
-        content_type = content_analysis.get('content_type', 'unknown')
-    else:
-        # Try attribute access (Pydantic model or object)
-        content_type = getattr(content_analysis, 'content_type', 'unknown')
-    # If content_type is an enum, get its value
-    if hasattr(content_type, 'value'):
-        content_type = content_type.value
     technical_metadata = results.get('technical_metadata', {})
-    contact_info = results.get('contact_information', {})
-    
-    # Handle different result formats - new AnalysisReport structure
-    formatted = {
-        # Basic summary information
-        'title': results.get('title', 'No Title'),
-        'summary': results.get('description', 'No summary available'),
-        'content_type': content_type,
+    metadata = results.get('metadata', {})
+
+    # Content type extraction (handle dict or object, enum to string)
+    if hasattr(content_analysis, 'content_type'):
+        content_type = str(getattr(content_analysis, 'content_type', 'unknown'))
+    elif isinstance(content_analysis, dict):
+        content_type = str(content_analysis.get('content_type', 'unknown'))
+    else:
+        content_type = 'unknown'
+
+    # Language extraction (try multiple sources)
+    language = (
+        technical_metadata.get('encoding')
+        or metadata.get('language')
+        or getattr(content_analysis, 'language', None)
+        or 'Unknown'
+    )
+
+    # Readability score extraction
+    if hasattr(content_analysis, 'readability_score'):
+        readability_score = getattr(content_analysis, 'readability_score', 0.0)
+    elif isinstance(content_analysis, dict):
+        readability_score = content_analysis.get('readability_score', 0.0)
+    else:
+        readability_score = 0.0
+
+    # Metrics mapping (populate all expected fields)
+    metrics = {
+        'content_size': results.get('character_count', 0),
         'word_count': results.get('word_count', 0),
-        'character_count': results.get('character_count', 0),
-        'paragraph_count': results.get('paragraph_count', 0),
-        'readability_score': (
-            content_analysis.get('readability_score', 0.0)
-            if isinstance(content_analysis, dict)
-            else getattr(content_analysis, 'readability_score', 0.0)
-        ),
-        'language': technical_metadata.get('encoding', 'Unknown'),
-        'processing_time': results.get('processing_time', 0.0),
-
-        # Keywords from the analysis
-        'keywords': [kw.get('word', kw) if isinstance(kw, dict) else kw 
-                    for kw in results.get('keywords', [])],
-
-        # Content sections
-        'key_sections': results.get('key_sections', []),
-
-        # Contact information
-        'emails': contact_info.get('emails', []),
-        'phones': contact_info.get('phones', []),
-
-        # Technical details
-        'overall_quality_score': results.get('overall_quality_score', 0.0),
-        'extraction_quality': results.get('extraction_quality', 0.0),
-        'processing_quality': results.get('processing_quality', 0.0),
-
-        # SEO and metadata
-        'domain': technical_metadata.get('domain', ''),
-        'protocol': technical_metadata.get('protocol', ''),
-        'cms': technical_metadata.get('cms', 'Unknown'),
-
-        # Counts
-        'heading_count': results.get('heading_count', 0),
-        'link_count': results.get('link_count', 0),
-        'image_count': results.get('image_count', 0),
-
-        # Performance metrics
-        'performance_metrics': results.get('performance_metrics', {}),
-
-        # Raw results for debugging
-        '_raw_results': results
+        'processing_time': results.get('processing_time', 0),
+        'performance_score': results.get('performance_score', 0),
+        'readability_score': readability_score,
+        'keyword_density': results.get('keyword_density', 0),
+        'image_count': len(results.get('images', [])),
+        'link_count': len(results.get('links', [])),
     }
-    
+
+    # Summary field (robust fallback)
+    summary_value = (
+        results.get('description')
+        or results.get('summary')
+        or ''
+    )
+
+    formatted = {
+        'url': results.get('url', ''),
+        'title': results.get('title', 'No Title'),
+        'language': language,
+        'content_type': content_type,
+        'metrics': metrics,
+        'summary': summary_value,
+        'keywords': results.get('keywords', []),
+        'images': results.get('images', []),
+        'links': results.get('links', []),
+        'metadata': results.get('metadata', {}),
+        'status': results.get('status', 'unknown'),
+        'analyzed_at': results.get('analyzed_at', ''),
+    }
     return formatted
 
 def format_keywords_for_display(keywords: List[str], max_display: int = 20) -> List[str]:

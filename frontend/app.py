@@ -11,7 +11,7 @@ import logging
 
 from src.services.api_client import APIClient
 from src.components.url_input import render_url_input
-from src.components.results_display import render_results
+from src.components.enhanced_results_display import render_enhanced_results
 from src.components.progress import render_progress_indicator
 from src.utils.formatters import format_analysis_results
 from src.utils.validators import validate_url_input
@@ -232,7 +232,7 @@ def render_main_content():
                 st.write("Formatted Results:")
                 st.json(st.session_state.analysis_results)
             
-            render_results(st.session_state.analysis_results)
+            render_enhanced_results(st.session_state.analysis_results)
         else:
             st.info("👆 Enter a URL and click 'Analyze Website' to see results")
             
