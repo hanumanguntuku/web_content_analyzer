@@ -10,7 +10,7 @@ def format_analysis_results(results: Dict[str, Any]) -> Dict[str, Any]:
     Format raw analysis results for display
     
     Args:
-        results: Raw analysis results from API
+        results: Raw analysis results from API (AnalysisReport format)
         
     Returns:
         Formatted results for UI display
@@ -18,39 +18,69 @@ def format_analysis_results(results: Dict[str, Any]) -> Dict[str, Any]:
     if not results:
         return {}
     
-    # Handle different result formats
+    # Extract content analysis data
+    content_analysis = results.get('content_analysis', {})
+    # Robustly extract content_type as a string
+    content_type = 'unknown'
+    if isinstance(content_analysis, dict):
+        content_type = content_analysis.get('content_type', 'unknown')
+    else:
+        # Try attribute access (Pydantic model or object)
+        content_type = getattr(content_analysis, 'content_type', 'unknown')
+    # If content_type is an enum, get its value
+    if hasattr(content_type, 'value'):
+        content_type = content_type.value
+    technical_metadata = results.get('technical_metadata', {})
+    contact_info = results.get('contact_information', {})
+    
+    # Handle different result formats - new AnalysisReport structure
     formatted = {
-        'summary': {
-            'title': results.get('title', 'N/A'),
-            'description': results.get('description', 'N/A'),
-            'word_count': results.get('word_count', 0),
-            'page_size': results.get('page_size', 0),
-            'load_time': results.get('load_time', 0.0),
-            'status_code': results.get('status_code', 200)
-        },
-        'content': {
-            'headings': results.get('headings', []),
-            'paragraphs': results.get('paragraphs', []),
-            'links': results.get('links', []),
-            'images': results.get('images', [])
-        },
-        'seo': {
-            'meta_title': results.get('meta_title', ''),
-            'meta_description': results.get('meta_description', ''),
-            'keywords': results.get('keywords', []),
-            'canonical_url': results.get('canonical_url', '')
-        },
-        'contact': {
-            'emails': results.get('emails', []),
-            'phones': results.get('phones', []),
-            'addresses': results.get('addresses', [])
-        },
-        'metadata': {
-            'language': results.get('language', 'Unknown'),
-            'charset': results.get('charset', 'Unknown'),
-            'last_modified': results.get('last_modified', 'Unknown'),
-            'content_type': results.get('content_type', 'Unknown')
-        }
+        # Basic summary information
+        'title': results.get('title', 'No Title'),
+        'summary': results.get('description', 'No summary available'),
+        'content_type': content_type,
+        'word_count': results.get('word_count', 0),
+        'character_count': results.get('character_count', 0),
+        'paragraph_count': results.get('paragraph_count', 0),
+        'readability_score': (
+            content_analysis.get('readability_score', 0.0)
+            if isinstance(content_analysis, dict)
+            else getattr(content_analysis, 'readability_score', 0.0)
+        ),
+        'language': technical_metadata.get('encoding', 'Unknown'),
+        'processing_time': results.get('processing_time', 0.0),
+
+        # Keywords from the analysis
+        'keywords': [kw.get('word', kw) if isinstance(kw, dict) else kw 
+                    for kw in results.get('keywords', [])],
+
+        # Content sections
+        'key_sections': results.get('key_sections', []),
+
+        # Contact information
+        'emails': contact_info.get('emails', []),
+        'phones': contact_info.get('phones', []),
+
+        # Technical details
+        'overall_quality_score': results.get('overall_quality_score', 0.0),
+        'extraction_quality': results.get('extraction_quality', 0.0),
+        'processing_quality': results.get('processing_quality', 0.0),
+
+        # SEO and metadata
+        'domain': technical_metadata.get('domain', ''),
+        'protocol': technical_metadata.get('protocol', ''),
+        'cms': technical_metadata.get('cms', 'Unknown'),
+
+        # Counts
+        'heading_count': results.get('heading_count', 0),
+        'link_count': results.get('link_count', 0),
+        'image_count': results.get('image_count', 0),
+
+        # Performance metrics
+        'performance_metrics': results.get('performance_metrics', {}),
+
+        # Raw results for debugging
+        '_raw_results': results
     }
     
     return formatted

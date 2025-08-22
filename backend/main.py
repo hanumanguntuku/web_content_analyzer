@@ -2,6 +2,8 @@
 Web Content Analyzer - Main FastAPI Application
 N-Tier Architecture with comprehensive error handling and security
 """
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -23,6 +25,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+from src.services.integrated_analysis_service import IntegratedAnalysisService
+
+analysis_service = IntegratedAnalysisService()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
@@ -36,6 +42,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("🛑 Shutting down Web Content Analyzer API...")
+    await analysis_service.cleanup()
 
 # Create FastAPI application
 app = FastAPI(
@@ -163,7 +170,21 @@ async def root() -> Dict[str, str]:
         "message": "Web Content Analyzer API",
         "version": settings.api_version,
         "docs": "/docs" if settings.debug else "Documentation disabled in production",
-        "health": "/health"
+        "health": "/health",
+        "status": "/status"
+    }
+
+# Simple status endpoint
+@app.get("/status", tags=["Health"])
+async def simple_status() -> Dict[str, Any]:
+    """Simple status endpoint for quick checks"""
+    return {
+        "status": "running",
+        "service": "web-content-analyzer-api",
+        "version": settings.api_version,
+        "environment": settings.environment,
+        "timestamp": time.time(),
+        "detailed_status": "/api/v1/status"
     }
 
 # Include API routes

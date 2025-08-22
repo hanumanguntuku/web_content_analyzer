@@ -169,6 +169,32 @@ def render_export_options(results: Dict[str, Any]) -> None:
         if st.button("📈 Export as CSV", disabled=True):
             st.info("CSV export will be available in Milestone 3")
 
+def render_structured_data(results: Dict[str, Any]) -> None:
+    """Render JSON-LD and microdata if present"""
+    metadata = results.get('metadata', {})
+    jsonld = metadata.get('jsonld', [])
+    microdata = metadata.get('microdata', [])
+    if jsonld or microdata:
+        st.subheader("🧩 Structured Data (JSON-LD & Microdata)")
+        if jsonld:
+            with st.expander("JSON-LD Blocks", expanded=False):
+                for i, block in enumerate(jsonld):
+                    st.json(block, expanded=False)
+        if microdata:
+            with st.expander("Microdata Items", expanded=False):
+                for i, item in enumerate(microdata):
+                    st.json(item, expanded=False)
+
+def render_ai_summary(results: Dict[str, Any]) -> None:
+    """Render AI-generated summary/insights from LLM"""
+    metadata = results.get('metadata', {})
+    ai_summary = metadata.get('ai_summary')
+    if ai_summary:
+        st.subheader("🤖 AI Insights (LLM)")
+        st.markdown(ai_summary)
+    else:
+        st.info("No AI-generated summary available.")
+
 def render_results(results: Dict[str, Any]) -> None:
     """
     Main function to render analysis results
@@ -209,6 +235,16 @@ def render_results(results: Dict[str, Any]) -> None:
         
         # Technical details
         render_metadata(results)
+        
+        st.markdown("---")
+        
+        # AI-generated summary/insights
+        render_ai_summary(results)
+        
+        st.markdown("---")
+        
+        # Structured data (JSON-LD, microdata)
+        render_structured_data(results)
         
         st.markdown("---")
         

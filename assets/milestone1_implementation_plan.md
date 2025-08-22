@@ -1589,4 +1589,555 @@ class ResourceMonitor:
 
 ---
 
-*This completes the detailed implementation plan for Milestone 1. The next phases (Service Layer, Presentation Layer, and Integration) would follow similar detailed breakdowns. Would you like me to continue with the remaining phases or would you prefer to start implementing based on this foundation?*
+## Phase 4: Service Layer Implementation (4-5 hours)
+
+### Task M1-SVC-01: Analysis Service Core Engine
+**Duration:** 2 hours | **Priority:** Critical | **Dependencies:** M1-DATA-01, M1-SEC-01
+
+#### Implementation Steps:
+1. **Create Integrated Analysis Service**
+```python
+# backend/src/services/integrated_analysis_service.py
+class IntegratedAnalysisService:
+    def __init__(self):
+        self.scraping_service = ScrapingService()
+        self.text_processor = TextProcessor()
+        self.content_sanitizer = ContentSanitizer()
+        self.url_validator = URLValidator()
+        self.rate_limiter = RateLimiter()
+        self.resource_monitor = ResourceMonitor()
+        
+    async def analyze_content(self, url: str, client_ip: str, 
+                            options: Optional[Dict] = None) -> AnalysisReport:
+        """Main analysis orchestration method"""
+        # 1. Security validation
+        await self._validate_security(url, client_ip)
+        
+        # 2. Content scraping
+        scraped_data = await self.scraping_service.scrape_url(url)
+        
+        # 3. Content processing
+        processed_content = await self.text_processor.process_content(
+            scraped_data.content, scraped_data.metadata
+        )
+        
+        # 4. Report generation
+        return await self._generate_report(url, processed_content, scraped_data)
+```
+
+2. **Implement Service Orchestration**
+   - Coordinate between scraping, processing, and validation services
+   - Handle service-level error recovery and fallbacks
+   - Implement processing pipeline with clear data flow
+   - Add comprehensive logging and monitoring
+
+3. **Business Logic Implementation**
+   - Content quality assessment algorithms
+   - Keyword extraction and relevance scoring
+   - Content categorization and classification
+   - Performance metrics calculation
+
+#### Build & Test:
+- **Build:** Integration service with orchestration logic (1h)
+- **Test:** Service coordination and error handling (1h)
+
+---
+
+### Task M1-SVC-02: Report Generation Service
+**Duration:** 1.5 hours | **Priority:** High | **Dependencies:** M1-SVC-01
+
+#### Implementation Steps:
+1. **Create Report Service**
+```python
+# backend/src/services/report_service.py
+class ReportService:
+    def __init__(self):
+        self.template_engine = ReportTemplateEngine()
+        self.metrics_calculator = MetricsCalculator()
+        
+    async def generate_analysis_report(self, 
+                                     processed_content: ProcessedContent,
+                                     scraped_data: ScrapedData,
+                                     url: str) -> AnalysisReport:
+        """Generate comprehensive analysis report"""
+        
+        # Calculate metrics
+        metrics = await self.metrics_calculator.calculate_all_metrics(
+            processed_content, scraped_data
+        )
+        
+        # Extract key insights
+        insights = await self._extract_insights(processed_content, metrics)
+        
+        # Generate structured report
+        return AnalysisReport(
+            url=url,
+            title=scraped_data.title,
+            description=scraped_data.description,
+            content_analysis=self._build_content_analysis(processed_content),
+            technical_metadata=self._build_technical_metadata(scraped_data),
+            keywords=insights.keywords,
+            key_sections=insights.sections,
+            performance_metrics=metrics.performance,
+            overall_quality_score=metrics.quality_score,
+            processing_time=metrics.processing_time,
+            analysis_timestamp=datetime.now()
+        )
+```
+
+2. **Implement Report Components**
+   - Content analysis summary generation
+   - Technical metadata compilation
+   - Performance metrics aggregation
+   - Quality scoring algorithms
+
+#### Build & Test:
+- **Build:** Report generation with all components (1h)
+- **Test:** Report accuracy and completeness (0.5h)
+
+---
+
+### Task M1-SVC-03: API Endpoints Implementation
+**Duration:** 1.5 hours | **Priority:** Critical | **Dependencies:** M1-SVC-01, M1-SVC-02
+
+#### Implementation Steps:
+1. **Create FastAPI Routes**
+```python
+# backend/src/api/routes.py
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
+
+router = APIRouter()
+
+@router.post("/analyze", response_model=AnalysisReport)
+async def analyze_url(
+    request: URLAnalysisRequest,
+    client_ip: str = Depends(get_client_ip),
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    """Analyze a website URL and return comprehensive analysis"""
+    try:
+        # Validate and process request
+        analysis_service = IntegratedAnalysisService()
+        result = await analysis_service.analyze_content(
+            str(request.url), client_ip, request.options
+        )
+        
+        # Add background tasks for cleanup/logging
+        background_tasks.add_task(log_analysis_completion, request.url, result)
+        
+        return result
+    except Exception as e:
+        logger.error(f"Analysis failed for {request.url}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/status")
+async def get_status():
+    """Get API service status and health check"""
+    return await analysis_service.get_service_health()
+
+@router.get("/supported-sites")
+async def get_supported_sites():
+    """Get list of supported website types and patterns"""
+    return await analysis_service.get_supported_site_patterns()
+```
+
+2. **Implement API Middleware**
+   - Request/response logging middleware
+   - Error handling and standardized responses
+   - CORS configuration for frontend integration
+   - Request rate limiting and security headers
+
+#### Build & Test:
+- **Build:** Complete API endpoints with middleware (1h)
+- **Test:** API functionality and error handling (0.5h)
+
+---
+
+## Phase 5: Presentation Layer Implementation (3-4 hours)
+
+### Task M1-UI-01: Enhanced Streamlit Frontend
+**Duration:** 2 hours | **Priority:** Critical | **Dependencies:** M1-SVC-03
+
+#### Implementation Steps:
+1. **Create Enhanced Frontend Application**
+```python
+# frontend/enhanced_app.py
+import streamlit as st
+import asyncio
+import time
+from src.services.api_client import APIClient
+from src.components.url_input import URLInputComponent
+from src.components.results_display import ResultsDisplayComponent
+from src.components.progress_tracker import ProgressTracker
+
+class WebContentAnalyzerApp:
+    def __init__(self):
+        self.api_client = APIClient(base_url="http://localhost:8000")
+        self.url_input = URLInputComponent()
+        self.results_display = ResultsDisplayComponent()
+        self.progress_tracker = ProgressTracker()
+        
+    def run(self):
+        st.set_page_config(
+            page_title="Web Content Analyzer",
+            page_icon="🌐",
+            layout="wide",
+            initial_sidebar_state="expanded"
+        )
+        
+        self._render_header()
+        self._render_sidebar()
+        self._render_main_content()
+        
+    def _render_main_content(self):
+        # URL input section
+        url = self.url_input.render()
+        
+        if url and st.button("🚀 Analyze Content", type="primary"):
+            self._perform_analysis(url)
+            
+    def _perform_analysis(self, url: str):
+        """Perform content analysis with real-time progress"""
+        progress_container = st.container()
+        results_container = st.container()
+        
+        with progress_container:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+        try:
+            # Start analysis
+            status_text.text("🔍 Starting analysis...")
+            progress_bar.progress(10)
+            
+            # Call API
+            with st.spinner("Analyzing content..."):
+                results = self.api_client.analyze_url(url)
+                
+            progress_bar.progress(100)
+            status_text.text("✅ Analysis completed!")
+            
+            # Display results
+            with results_container:
+                self.results_display.render(results)
+                
+        except Exception as e:
+            st.error(f"Analysis failed: {str(e)}")
+            progress_bar.progress(0)
+```
+
+2. **Implement UI Components**
+   - Enhanced URL input with validation feedback
+   - Real-time progress tracking and status updates
+   - Comprehensive results visualization
+   - Export functionality for reports
+
+#### Build & Test:
+- **Build:** Complete Streamlit application with components (1.5h)
+- **Test:** UI functionality and user experience (0.5h)
+
+---
+
+### Task M1-UI-02: API Client and State Management
+**Duration:** 1 hour | **Priority:** High | **Dependencies:** M1-UI-01
+
+#### Implementation Steps:
+1. **Create Robust API Client**
+```python
+# frontend/src/services/api_client.py
+import requests
+import time
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
+
+@dataclass
+class APIResponse:
+    success: bool
+    data: Optional[Dict[str, Any]]
+    error: Optional[str]
+    status_code: int
+    response_time: float
+
+class APIClient:
+    def __init__(self, base_url: str, timeout: int = 30):
+        self.base_url = base_url.rstrip('/')
+        self.timeout = timeout
+        self.session = requests.Session()
+        
+    def analyze_url(self, url: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Analyze URL with comprehensive error handling"""
+        payload = {
+            "url": url,
+            "options": options or {}
+        }
+        
+        return self._make_request('POST', '/api/v1/analyze', data=payload)
+        
+    def _make_request(self, method: str, endpoint: str, 
+                     data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Make HTTP request with error handling and retries"""
+        url = f"{self.base_url}{endpoint}"
+        start_time = time.time()
+        
+        try:
+            response = self.session.request(
+                method=method,
+                url=url,
+                json=data,
+                timeout=self.timeout,
+                headers={'Content-Type': 'application/json'}
+            )
+            response.raise_for_status()
+            
+            return APIResponse(
+                success=True,
+                data=response.json(),
+                error=None,
+                status_code=response.status_code,
+                response_time=time.time() - start_time
+            )
+            
+        except requests.exceptions.RequestException as e:
+            return APIResponse(
+                success=False,
+                data=None,
+                error=str(e),
+                status_code=getattr(e.response, 'status_code', 0),
+                response_time=time.time() - start_time
+            )
+```
+
+2. **Implement State Management**
+   - Streamlit session state management for analysis results
+   - Caching for API responses and processed data
+   - User preferences and settings persistence
+   - Analysis history tracking
+
+#### Build & Test:
+- **Build:** API client with error handling and state management (0.5h)
+- **Test:** API integration and state persistence (0.5h)
+
+---
+
+### Task M1-UI-03: Results Visualization and Export
+**Duration:** 1 hour | **Priority:** Medium | **Dependencies:** M1-UI-02
+
+#### Implementation Steps:
+1. **Create Results Display Components**
+```python
+# frontend/src/components/results_display.py
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from typing import Dict, Any
+
+class ResultsDisplayComponent:
+    def render(self, analysis_results: Dict[str, Any]):
+        """Render comprehensive analysis results"""
+        self._render_overview(analysis_results)
+        self._render_content_analysis(analysis_results)
+        self._render_technical_details(analysis_results)
+        self._render_export_options(analysis_results)
+        
+    def _render_overview(self, results: Dict[str, Any]):
+        """Render analysis overview with key metrics"""
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                "Quality Score", 
+                f"{results.get('overall_quality_score', 0):.1f}%",
+                delta=None
+            )
+            
+        with col2:
+            st.metric(
+                "Word Count", 
+                f"{results.get('word_count', 0):,}",
+                delta=None
+            )
+            
+        with col3:
+            st.metric(
+                "Processing Time", 
+                f"{results.get('processing_time', 0):.2f}s",
+                delta=None
+            )
+            
+        with col4:
+            st.metric(
+                "Content Type", 
+                results.get('content_analysis', {}).get('content_type', 'Unknown'),
+                delta=None
+            )
+    
+    def _render_content_analysis(self, results: Dict[str, Any]):
+        """Render detailed content analysis"""
+        st.subheader("📊 Content Analysis")
+        
+        content_analysis = results.get('content_analysis', {})
+        
+        # Keywords visualization
+        keywords = results.get('keywords', [])
+        if keywords:
+            st.subheader("🔑 Top Keywords")
+            keywords_df = pd.DataFrame(keywords)
+            if 'frequency' in keywords_df.columns:
+                fig = px.bar(
+                    keywords_df.head(10), 
+                    x='keyword', 
+                    y='frequency',
+                    title="Keyword Frequency"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+```
+
+2. **Implement Export Functionality**
+   - PDF report generation with formatted layout
+   - JSON export for raw data access
+   - CSV export for spreadsheet analysis
+   - Share functionality for results
+
+#### Build & Test:
+- **Build:** Results visualization and export features (0.5h)
+- **Test:** Export functionality and data accuracy (0.5h)
+
+---
+
+## Phase 6: Integration and Testing (3-4 hours)
+
+### Task M1-INT-01: End-to-End Integration
+**Duration:** 2 hours | **Priority:** Critical | **Dependencies:** M1-UI-03
+
+#### Implementation Steps:
+1. **Complete System Integration**
+```python
+# Integration testing and coordination
+class SystemIntegrationManager:
+    def __init__(self):
+        self.backend_health_checker = BackendHealthChecker()
+        self.frontend_validator = FrontendValidator()
+        self.api_integration_tester = APIIntegrationTester()
+        
+    async def validate_full_system(self) -> SystemHealthReport:
+        """Validate complete system integration"""
+        
+        # 1. Backend health check
+        backend_status = await self.backend_health_checker.check_all_services()
+        
+        # 2. API endpoint validation
+        api_status = await self.api_integration_tester.test_all_endpoints()
+        
+        # 3. Frontend-backend connectivity
+        integration_status = await self._test_frontend_backend_integration()
+        
+        # 4. End-to-end workflow test
+        e2e_status = await self._test_complete_analysis_workflow()
+        
+        return SystemHealthReport(
+            backend_health=backend_status,
+            api_health=api_status,
+            integration_health=integration_status,
+            e2e_health=e2e_status,
+            overall_status=self._calculate_overall_status()
+        )
+```
+
+2. **Implement Integration Tests**
+   - Backend service integration tests
+   - API endpoint connectivity tests
+   - Frontend-backend communication validation
+   - Complete workflow end-to-end tests
+
+#### Build & Test:
+- **Build:** Integration test suite and validation (1h)
+- **Test:** Complete system integration verification (1h)
+
+---
+
+### Task M1-INT-02: Performance Optimization and Monitoring
+**Duration:** 1.5 hours | **Priority:** High | **Dependencies:** M1-INT-01
+
+#### Implementation Steps:
+1. **Performance Optimization**
+```python
+# Performance monitoring and optimization
+class PerformanceOptimizer:
+    def __init__(self):
+        self.metrics_collector = MetricsCollector()
+        self.cache_manager = CacheManager()
+        self.resource_optimizer = ResourceOptimizer()
+        
+    async def optimize_system_performance(self):
+        """Optimize system performance based on metrics"""
+        
+        # 1. Collect performance metrics
+        metrics = await self.metrics_collector.collect_all_metrics()
+        
+        # 2. Optimize caching strategy
+        await self.cache_manager.optimize_cache_configuration(metrics)
+        
+        # 3. Optimize resource usage
+        await self.resource_optimizer.optimize_resource_allocation(metrics)
+        
+        # 4. Generate performance report
+        return await self._generate_performance_report(metrics)
+```
+
+2. **Implement Monitoring Dashboard**
+   - Real-time performance metrics display
+   - Resource usage monitoring
+   - Error tracking and alerting
+   - System health status indicators
+
+#### Build & Test:
+- **Build:** Performance optimization and monitoring (1h)
+- **Test:** Performance validation and monitoring (0.5h)
+
+---
+
+### Task M1-INT-03: Production Readiness and Documentation
+**Duration:** 0.5 hours | **Priority:** Medium | **Dependencies:** M1-INT-02
+
+#### Implementation Steps:
+1. **Production Configuration**
+   - Environment-specific configuration management
+   - Security hardening for production deployment
+   - Docker production optimization
+   - Health check endpoints for orchestration
+
+2. **Comprehensive Documentation**
+   - API documentation with OpenAPI/Swagger
+   - User guide for frontend application
+   - Deployment and configuration guide
+   - Troubleshooting and maintenance documentation
+
+#### Build & Test:
+- **Build:** Production configuration and documentation (0.3h)
+- **Test:** Production readiness validation (0.2h)
+
+---
+
+## Final Integration Timeline Summary
+
+### Phase 4: Service Layer (4-5 hours)
+- **M1-SVC-01:** Analysis Service Core Engine (2h)
+- **M1-SVC-02:** Report Generation Service (1.5h)
+- **M1-SVC-03:** API Endpoints Implementation (1.5h)
+
+### Phase 5: Presentation Layer (3-4 hours)
+- **M1-UI-01:** Enhanced Streamlit Frontend (2h)
+- **M1-UI-02:** API Client and State Management (1h)
+- **M1-UI-03:** Results Visualization and Export (1h)
+
+### Phase 6: Integration and Testing (3-4 hours)
+- **M1-INT-01:** End-to-End Integration (2h)
+- **M1-INT-02:** Performance Optimization and Monitoring (1.5h)
+- **M1-INT-03:** Production Readiness and Documentation (0.5h)
+
+### Total Estimated Time: 10-13 hours
+### With Infrastructure and Data Layers: 22-28 hours total
+
+---
+
+*This completes the comprehensive implementation plan for Milestone 1. Each phase builds upon the previous ones, following the bottom-up approach from infrastructure through data, security, services, presentation, and finally integration. The plan provides detailed task breakdowns, code examples, and clear build/test criteria for each component.*

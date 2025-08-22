@@ -1,0 +1,68 @@
+# Development and Testing Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Include base requirements
+-r requirements.txt
+
+# ===== DEVELOPMENT TOOLS =====
+# Code formatting and linting
+black==23.12.1
+flake8==6.1.0
+isort==5.13.2
+mypy==1.8.0
+
+# Code quality and security
+bandit==1.7.5        # Security linting
+safety==2.3.5        # Dependency vulnerability scanning
+pre-commit==3.6.0    # Git hooks for code quality
+
+# ===== ADVANCED TESTING =====
+# Load testing
+locust==2.17.0       # Load testing framework
+
+# API testing
+pytest-httpx==0.26.0 # HTTP client testing
+responses==0.24.1    # Mock HTTP responses
+
+# Coverage and reporting
+pytest-html==4.1.1   # HTML test reports
+pytest-xdist==3.5.0  # Parallel test execution
+pytest-mock==3.12.0  # Mocking utilities
+
+# ===== DOCUMENTATION =====
+# Documentation generation
+sphinx==7.2.6        # Documentation generator
+sphinx-rtd-theme==2.0.0  # Read the Docs theme
+mkdocs==1.5.3        # Alternative documentation tool
+mkdocs-material==9.5.3   # Material theme for MkDocs
+
+# ===== DEBUGGING & PROFILING =====
+# Debugging tools
+ipdb==0.13.13        # Enhanced debugger
+pdb++==0.10.3        # Enhanced PDB
+memory-profiler==0.61.0  # Memory usage profiling
+
+# Performance analysis
+line-profiler==4.1.1 # Line-by-line profiling
+py-spy==0.3.14       # Sampling profiler
+
+# ===== DATABASE & DEVELOPMENT =====
+# Database tools (for future milestones)
+alembic==1.13.1      # Database migrations
+sqlalchemy==2.0.25   # SQL toolkit (for future use)
+
+# ===== JUPYTER & NOTEBOOKS =====
+# Interactive development
+jupyter==1.0.0       # Jupyter notebook
+jupyterlab==4.0.9    # JupyterLab environment
+ipykernel==6.27.1    # IPython kernel
+
+# ===== DEPLOYMENT TOOLS =====
+# Container and deployment
+docker-compose==1.29.2  # Note: Usually installed separately
+gunicorn==21.2.0      # WSGI HTTP Server
+
+# ===== ENVIRONMENT & CONFIG =====
+# Environment management
+python-decouple==3.8  # Settings management
+environs==10.3.0      # Environment variable parsing

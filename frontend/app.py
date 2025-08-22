@@ -227,6 +227,11 @@ def render_main_content():
         st.subheader("📊 Analysis Results")
         
         if st.session_state.analysis_results:
+            # Add debug info
+            with st.expander("🔧 Debug Info", expanded=False):
+                st.write("Formatted Results:")
+                st.json(st.session_state.analysis_results)
+            
             render_results(st.session_state.analysis_results)
         else:
             st.info("👆 Enter a URL and click 'Analyze Website' to see results")
@@ -277,17 +282,18 @@ def perform_analysis(url: str):
             api_client = get_api_client()
             results = api_client.analyze_url(url)
             
-            # Clear progress indicator
-            progress_placeholder.empty()
-            
+            # Debug: Show raw API response before formatting
+            with st.expander("🛠️ Raw API Response", expanded=True):
+                st.json(results)
+
             # Store results
-            st.session_state.analysis_results = results
+            st.session_state.analysis_results = format_analysis_results(results)
             
             # Add to history
             st.session_state.analysis_history.append({
                 "url": url,
                 "timestamp": time.time(),
-                "results": results
+                "results": st.session_state.analysis_results
             })
             
             # Show success message

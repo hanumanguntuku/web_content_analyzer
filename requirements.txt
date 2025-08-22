@@ -1,0 +1,73 @@
+# Web Content Analyzer - Complete Dependencies
+# Install with: pip install -r requirements.txt
+
+# ===== CORE FRAMEWORK =====
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+streamlit==1.28.2
+
+# ===== WEB SCRAPING & HTTP =====
+aiohttp==3.9.1
+beautifulsoup4==4.12.2
+lxml==4.9.3
+requests==2.31.0
+httpx==0.25.2
+
+# ===== CONTENT PROCESSING =====
+html2text==2020.1.16
+python-multipart==0.0.6
+nltk==3.8.1
+textstat==0.7.3
+
+# ===== DATA PROCESSING & VISUALIZATION =====
+pandas==2.1.4
+plotly==5.17.0
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# ===== FILE PROCESSING =====
+reportlab==4.0.7  # PDF generation
+openpyxl==3.1.2   # Excel export
+
+# ===== UI ENHANCEMENTS =====
+streamlit-option-menu==0.3.6
+streamlit-aggrid==0.3.4.post3
+
+# ===== SECURITY & VALIDATION =====
+email-validator==2.1.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+validators==0.22.0
+
+# ===== TESTING & DEVELOPMENT =====
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+coverage==7.3.2
+
+# ===== LOGGING & MONITORING =====
+python-json-logger==2.0.7
+
+# ===== ENVIRONMENT =====
+python-dotenv==1.0.0
+
+# ===== ADDITIONAL DEPENDENCIES FOR ENHANCED FEATURES =====
+# Text processing and analysis
+scikit-learn>=1.3.0  # For TF-IDF and text analysis
+numpy>=1.24.0        # For numerical operations
+scipy>=1.11.0        # For scientific computing
+
+# Image processing (for enhanced media analysis)
+Pillow>=10.0.0       # For image processing
+
+# Enhanced HTTP features
+urllib3>=2.0.0       # For advanced HTTP features
+chardet>=5.0.0       # For character encoding detection
+
+# Performance monitoring
+psutil>=5.9.0        # For system resource monitoring
+
+# Enhanced security
+cryptography>=41.0.0 # For enhanced cryptographic operations
