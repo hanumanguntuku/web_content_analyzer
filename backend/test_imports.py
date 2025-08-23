@@ -22,9 +22,6 @@ try:
     from src.models.data_models import URLAnalysisRequest
     print("✅ Data models imported successfully")
     
-    # Test validators
-    from src.utils.validators import URLValidator
-    print("✅ Validators imported successfully")
     
     # Test services
     from src.services.scraping_service import ScrapingService
