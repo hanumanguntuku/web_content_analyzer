@@ -146,6 +146,11 @@ class IntegratedAnalysisService:
                 images=processed_data.get('analysis', {}).get('images', []),
                 contact_information={'emails': processed_data.get('emails', []), 'phones': processed_data.get('phones', [])}
             )
+            # Debug: Log processed_content after creation
+            try:
+                logger.info(f"[DEBUG] processed_content (type={type(processed_content)}): {str(processed_content)}")
+            except Exception as e:
+                logger.warning(f"[DEBUG] Could not stringify processed_content: {e}")
 
             # Step 3: Detect content type
             content_type, confidence, detection_details = await self.content_detection_service.detect_content_type(
@@ -409,18 +414,50 @@ class IntegratedAnalysisService:
                 link_info = scraped_data.links
             
             # Calculate metrics
+            # Support both dict and model for processed_content
+            def get_val(obj, key, default=0):
+                if isinstance(obj, dict):
+                    return obj.get(key, default)
+                return getattr(obj, key, default)
+
+            # Use values from processed_content and other data sources
             metrics = AnalysisMetrics(
-                processing_time=processing_time,
+                # Timing metrics
+                processing_time=get_val(processed_content, 'processing_time', processing_time),
+                response_time=getattr(scraped_data, 'load_time', 0.0),
+                scraping_time=getattr(scraped_data, 'load_time', 0.0),  # Approximating scraping time with load time
+                extraction_time=get_val(processed_content, 'extraction_time', 0.0),
+                analysis_time=get_val(processed_content, 'analysis_time', 0.0),
+
+                # Content size and structure metrics
                 content_size=getattr(scraped_data, 'page_size', 0),
-                word_count=getattr(processed_content, 'word_count', 0),
-                readability_score=getattr(processed_content, 'readability_score', 0),
-                keyword_density=len(getattr(processed_content, 'keywords', [])) / max(getattr(processed_content, 'word_count', 1), 1),
+                word_count=get_val(processed_content, 'word_count', 0),
+                character_count=get_val(processed_content, 'character_count', 0),
+                paragraph_count=get_val(processed_content, 'paragraph_count', 0),
+                sentence_count=get_val(processed_content, 'sentence_count', 0),
                 image_count=len(image_info),
                 link_count=len(link_info),
-                performance_score=self._calculate_performance_score(
-                    scraped_data, extracted_content, processed_content
-                )
+
+                # Quality and scoring metrics
+                readability_score=get_val(processed_content, 'readability_score', 0.0),
+                performance_score=get_val(processed_content, 'performance_score', 
+                    self._calculate_performance_score(scraped_data, extracted_content, processed_content)),
+                content_quality_score=getattr(extracted_content, 'quality_score', 0.0) * 100,
+                extraction_quality=getattr(extracted_content, 'extraction_quality', 0.0),
+
+                # Technical metrics
+                http_status=getattr(scraped_data, 'status_code', 200),
+                redirect_count=getattr(scraped_data, 'redirect_count', 0)
             )
+            # Debug logging for processed_content and metrics
+            try:
+                logger.info(f"[DEBUG] processed_content (type={type(processed_content)}): {str(processed_content)}")
+            except Exception as e:
+                logger.warning(f"[DEBUG] Could not stringify processed_content: {e}")
+            try:
+                logger.info(f"[DEBUG] metrics: {metrics.dict() if hasattr(metrics, 'dict') else str(metrics)}")
+            except Exception as e:
+                logger.warning(f"[DEBUG] Could not stringify metrics: {e}")
             
             # Create comprehensive report
             report = AnalysisReport(
@@ -428,7 +465,7 @@ class IntegratedAnalysisService:
                 title=getattr(extracted_content, 'title', '') or getattr(scraped_data, 'title', ''),
                 description=getattr(processed_content, 'summary', ''),
                 keywords=getattr(processed_content, 'keywords', []),
-                content_type=getattr(scraped_data, 'content_type', 'text/html'),
+                content_type=(getattr(scraped_data, 'content_type', None) or 'text/html'),
                 language=getattr(processed_content, 'language', 'unknown'),
                 metrics=metrics,
                 images=image_info,
@@ -437,53 +474,12 @@ class IntegratedAnalysisService:
                     'analysis_id': analysis_id,
                     'scraped_at': datetime.utcnow().isoformat(),
                     'processing_stage': ProcessingStage.COMPLETED.value,
-                    'content_quality': getattr(extracted_content, 'quality_score', 0.0),
-                    'security_scanned': True,
-                    'deep_analysis_enabled': hasattr(processed_content, 'sentiment_score'),
-                    'sentiment_score': getattr(processed_content, 'sentiment_score', None),
-                    'entities': getattr(processed_content, 'entities', []),
-                    'readability_metrics': getattr(processed_content, 'readability_metrics', {})
-                },
-                analyzed_at=datetime.utcnow(),
-                status=ScrapingStatus.COMPLETED
+                }
             )
-            
-            logger.info(f"Comprehensive report generated successfully for {url}")
             return report
-            
         except Exception as e:
-            logger.error(f"Report generation failed for {url}: {str(e)}")
-            raise ProcessingException(f"Report generation failed: {str(e)}")
-    
-    def _calculate_performance_score(self, scraped_data, extracted_content, processed_content) -> float:
-        """Calculate overall performance score"""
-        try:
-            # Response time factor (0-100, lower is better)
-            response_time = getattr(scraped_data, 'load_time', 5.0)
-            response_score = max(0, 100 - (response_time * 20))
-            
-            # Content quality factor (0-100)
-            quality_score = getattr(extracted_content, 'quality_score', 0.5) * 100
-            
-            # Readability factor (0-100)
-            readability_score = getattr(processed_content, 'readability_score', 50.0)
-            
-            # Content completeness factor
-            word_count = getattr(processed_content, 'word_count', 0)
-            completeness_score = min(100, word_count / 10)  # 1000 words = 100 score
-            
-            # Weighted average
-            performance_score = (
-                response_score * 0.25 +
-                quality_score * 0.35 +
-                readability_score * 0.25 +
-                completeness_score * 0.15
-            )
-            
-            return round(min(100, max(0, performance_score)), 2)
-            
-        except Exception:
-            return 50.0  # Default neutral score on error
+            logger.error(f"Failed to generate comprehensive report for {url}: {str(e)}", exc_info=True)
+            raise ProcessingException(f"Report generation failed: {str(e)}", url=url)
     
     def _create_error_report(
         self, 

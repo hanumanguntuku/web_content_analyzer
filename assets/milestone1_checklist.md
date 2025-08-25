@@ -34,7 +34,7 @@
 - **Test:** [ ] Test API startup and health endpoints (1h)
 
 ### M1-INFRA-04: Streamlit Frontend Foundation (1h)
-- [ ] Create main Streamlit app (app.py)
+- [ ] Create main Streamlit app (enhanced_app.py)
 - [ ] Setup API client service
 - [ ] Create basic UI components
 - **Build:** [ ] Setup Streamlit application (0.5h)

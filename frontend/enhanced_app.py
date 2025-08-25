@@ -21,6 +21,16 @@ from src.services.enhanced_api_client import (
     test_backend_connection,
     analyze_website
 )
+from src.components.enhanced_progress import (
+    render_progress_section,
+    ProgressReporter,
+    update_progress
+)
+from src.services.enhanced_api_client import (
+    get_api_client,
+    test_backend_connection,
+    analyze_website
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -168,26 +178,18 @@ def render_app_header():
     """, unsafe_allow_html=True)
 
 def render_sidebar():
-    """Render the enhanced sidebar with system information"""
+    """Render the enhanced sidebar with system information and recent analyses"""
     with st.sidebar:
         st.markdown("## 🛠️ System Information")
-        
         # Backend connection status
         st.markdown("### 🌐 Backend Status")
-        
-        # Check backend connection
         backend_status = test_backend_connection()
-        
         if backend_status["available"]:
             st.markdown('<p class="status-healthy">✅ Connected</p>', unsafe_allow_html=True)
-            
-            # Show backend details if available
             if "data" in backend_status:
                 data = backend_status["data"]
                 st.write(f"**Environment:** {data.get('environment', 'Unknown')}")
                 st.write(f"**Version:** {data.get('version', 'Unknown')}")
-                
-                # Health information
                 health_info = data.get('health', {})
                 if health_info:
                     status = health_info.get('status', 'unknown')
@@ -200,7 +202,6 @@ def render_sidebar():
         else:
             st.markdown('<p class="status-unhealthy">❌ Disconnected</p>', unsafe_allow_html=True)
             st.error(f"Error: {backend_status.get('error', 'Unknown error')}")
-            
             st.markdown("### 🔧 Troubleshooting")
             st.info("""
             **Backend connection failed:**
@@ -209,7 +210,6 @@ def render_sidebar():
             3. Verify network connectivity
             4. Check firewall settings
             """)
-        
         # Feature status
         st.markdown("### ✨ Features")
         st.write("🛡️ Security Validation")
@@ -217,7 +217,6 @@ def render_sidebar():
         st.write("📊 Text Processing")
         st.write("🔍 Deep Analysis")
         st.write("📈 Performance Metrics")
-        
         # System capabilities
         st.markdown("### 🎯 Capabilities")
         st.write("• SSRF Prevention")
@@ -228,11 +227,22 @@ def render_sidebar():
         st.write("• Sentiment Analysis")
         st.write("• Keyword Extraction")
         st.write("• Real-time Progress")
-        
         # Performance stats (if available)
         if backend_status["available"]:
-            if st.button("📊 View System Stats"):
+            if st.button("📊 View System Stats", key="view_stats_btn"):
                 st.session_state.show_stats = True
+        # --- Recent Analyses History ---
+        st.markdown("### 📝 Recent Analyses")
+        if 'analysis_history' in st.session_state and st.session_state.analysis_history:
+            for i, history_item in enumerate(reversed(st.session_state.analysis_history[-5:])):
+                url_key = f"sidebar_history_{i}_{history_item['url']}"
+                if st.button(f"🔗 {history_item['url'][:30]}...", key=url_key):
+                    st.session_state.current_analysis_config = {"url": history_item['url']}
+                    st.session_state.analysis_result = history_item['results']
+                    st.session_state.analysis_complete = True
+                    st.experimental_rerun()
+        else:
+            st.info("No recent analyses yet.")
 
 def render_system_stats():
     """Render system performance statistics"""
@@ -285,7 +295,7 @@ def render_system_stats():
         except Exception as e:
             st.error(f"Error retrieving statistics: {str(e)}")
         
-        if st.button("❌ Close Stats"):
+        if st.button("❌ Close Stats", key="close_stats_btn"):
             st.session_state.show_stats = False
             st.experimental_rerun()
 
@@ -294,77 +304,50 @@ def progress_callback(stage: str, progress: float, status: str):
     update_progress(stage, progress, status, f"Stage: {stage} - {status}")
 
 def main():
-    """Main application function"""
-    
-    # Render header
+    """Main application function (enhanced, with history, debug, and example cards)"""
     render_app_header()
-    
-    # Render sidebar
     render_sidebar()
-    
-    # Show system stats if requested
     if st.session_state.get('show_stats', False):
         render_system_stats()
         return
-    
     # Check if we have an analysis in progress
     if 'analysis_in_progress' in st.session_state and st.session_state.analysis_in_progress:
         st.markdown("## 🔄 Analysis in Progress")
-        
-        # Show progress
         render_progress_section(st.session_state.get('current_analysis_config'))
-        
-        # Simulate progress updates (in real implementation, this would be handled by the API)
         if 'analysis_start_time' not in st.session_state:
             st.session_state.analysis_start_time = time.time()
-        
         elapsed = time.time() - st.session_state.analysis_start_time
-        
-        # Simulate completion after some time
-        if elapsed > 10:  # 10 seconds for demo
+        if elapsed > 10:
             st.session_state.analysis_in_progress = False
             st.session_state.analysis_complete = True
             st.experimental_rerun()
-        
-        # Auto-refresh every 2 seconds
         time.sleep(2)
         st.experimental_rerun()
-    
-    # Check if analysis is complete
     elif st.session_state.get('analysis_complete', False):
-        
         # Show results if we have them
         if 'analysis_result' in st.session_state:
+            if 'raw_api_response' in st.session_state:
+                with st.expander("�️ Raw API Response (from backend)", expanded=True):
+                    st.json(st.session_state.raw_api_response)
+            with st.expander("� Debug Info (Formatted Results)", expanded=False):
+                st.json(st.session_state.analysis_result)
             render_enhanced_results(st.session_state.analysis_result)
         else:
             st.warning("Analysis completed but no results available.")
-        
         # Option to start new analysis
-        if st.button("🔄 Analyze Another URL"):
-            # Clear session state
+        if st.button("🔄 Analyze Another URL", key="analyze_another_btn"):
             for key in list(st.session_state.keys()):
-                if key.startswith('analysis_'):
+                if key.startswith('analysis_') or key in ['current_analysis_config', 'analysis_result', 'raw_api_response']:
                     del st.session_state[key]
-            if 'current_analysis_config' in st.session_state:
-                del st.session_state['current_analysis_config']
             st.experimental_rerun()
-    
-    # Main URL input and analysis initiation
     else:
         st.markdown("## 🚀 Start Analysis")
-        
-        # Render URL input section
+        # Render URL input section (enhanced)
         analysis_config = render_url_input_section()
-        
         if analysis_config:
-            # Start analysis
             st.markdown("---")
             st.markdown("### 🔍 Starting Analysis...")
-            
-            # Store configuration
             st.session_state.current_analysis_config = analysis_config
-            
-            # Perform analysis
             try:
                 with st.spinner("Initializing analysis..."):
                     result = analyze_website(
@@ -372,16 +355,21 @@ def main():
                         analysis_config=analysis_config,
                         progress_callback=progress_callback
                     )
-                
-                # Store result and show
+                # Store both formatted and raw results for debug/history
+                st.session_state.raw_api_response = result
                 st.session_state.analysis_result = result
                 st.session_state.analysis_complete = True
+                # Add to history (like app.py)
+                if 'analysis_history' not in st.session_state:
+                    st.session_state.analysis_history = []
+                st.session_state.analysis_history.append({
+                    "url": analysis_config["url"],
+                    "timestamp": time.time(),
+                    "results": result
+                })
                 st.experimental_rerun()
-            
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")
-                
-                # Show error details
                 st.session_state.analysis_result = {
                     "error": True,
                     "error_type": "CLIENT_ERROR",
@@ -390,6 +378,28 @@ def main():
                 }
                 st.session_state.analysis_complete = True
                 st.experimental_rerun()
+        # Show example analysis cards if no results/history
+        elif not st.session_state.get('analysis_history'):
+            st.info("👆 Enter a URL and click 'Analyze Website' to see results")
+            st.markdown("### 🎯 What you'll get:")
+            st.markdown("""
+            <div class="feature-card">
+                <strong>📄 Content Summary</strong><br>
+                Key insights and main themes from the website
+            </div>
+            <div class="feature-card">
+                <strong>📈 SEO Analysis</strong><br>
+                Meta tags, headings structure, and optimization tips
+            </div>
+            <div class="feature-card">
+                <strong>📞 Contact Information</strong><br>
+                Extracted emails, phone numbers, and social links
+            </div>
+            <div class="feature-card">
+                <strong>🔍 Technical Details</strong><br>
+                Word count, readability score, and language detection
+            </div>
+            """, unsafe_allow_html=True)
 
 def initialize_session_state():
     """Initialize session state variables"""

@@ -143,12 +143,14 @@ class WebScraperService:
                 content = await self._read_content_safely(response)
                 
                 # Parse metadata
-                metadata = self._extract_metadata(response, url)
+                metadata = self._extract_metadata(response, url, content)
                 
                 processing_time = time.time() - start_time
                 
                 logger.info(f"Successfully scraped {url} in {processing_time:.2f}s")
                 
+                # Use content_type from header, fallback to 'text/html'
+                content_type = response.headers.get('content-type') or 'text/html'
                 return ScrapedContent(
                     url=url,
                     title=metadata.get('title', ''),
@@ -162,7 +164,7 @@ class WebScraperService:
                     page_size=len(content.encode('utf-8')),
                     load_time=processing_time,
                     status_code=response.status,
-                    content_type=response.content_type or 'text/html',
+                    content_type=content_type,
                     language=None,  # Will be detected later
                     emails=[],      # Will be extracted later
                     phones=[],      # Will be extracted later
@@ -225,22 +227,33 @@ class WebScraperService:
             'Upgrade-Insecure-Requests': '1'
         }
         
-    def _extract_metadata(self, response: aiohttp.ClientResponse, url: str) -> Dict[str, Any]:
-        """Extract metadata from HTTP response"""
+    def _extract_metadata(self, response: aiohttp.ClientResponse, url: str, content: str = None) -> Dict[str, Any]:
+        """Extract metadata from HTTP response and HTML content (for <title>)"""
         parsed_url = urlparse(url)
-        
+        title = ''
+        if content:
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(content, 'html.parser')
+                title_tag = soup.find('title')
+                if title_tag:
+                    title = title_tag.get_text().strip()
+            except Exception:
+                pass
+        content_type = response.headers.get('content-type') or 'text/html'
         return {
             'domain': parsed_url.netloc,
             'path': parsed_url.path,
             'protocol': parsed_url.scheme,
             'status_code': response.status,
-            'content_type': response.headers.get('content-type', ''),
+            'content_type': content_type,
             'server': response.headers.get('server', ''),
             'encoding': response.charset or 'utf-8',
             'content_length': response.headers.get('content-length'),
             'last_modified': response.headers.get('last-modified'),
             'cache_control': response.headers.get('cache-control'),
-            'final_url': str(response.url)  # Handle redirects
+            'final_url': str(response.url),  # Handle redirects
+            'title': title
         }
 
 # Convenience function for one-off scraping

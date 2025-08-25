@@ -76,7 +76,7 @@ project_root/
 │   │   └── styles.css       # Custom styling
 │   ├── templates/            # REPORT TEMPLATES
 │   │   └── report_template.html
-│   ├── app.py               # Main Streamlit application
+│   ├── enhanced_app.py      # Main Streamlit application
 │   ├── requirements.txt     # Frontend dependencies
 │   └── Dockerfile          # Frontend container definition
 ├── docker-compose.yml       # Orchestration
@@ -118,7 +118,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 8501
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "enhanced_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 ```
 
 3. **Docker Compose Configuration**
@@ -271,7 +271,7 @@ settings = Settings()
 **Duration:** 1 hour | **Priority:** Critical | **Dependencies:** M1-INFRA-01
 
 #### Implementation Steps:
-1. **Main Streamlit Application (app.py)**
+1. **Main Streamlit Application (enhanced_app.py)**
 ```python
 import streamlit as st
 import requests

@@ -72,37 +72,31 @@ class TextProcessor:
     
     def process_content(self, content: str, url: Optional[str] = None, html: Optional[str] = None) -> Dict[str, Any]:
         """Comprehensive content processing pipeline"""
+        import time
+        start_time = time.time()
         try:
             logger.info(f"Starting text processing for content length: {len(content)}")
-            
             # Deep text cleaning
             cleaned_text = self.deep_clean_text(content)
-            
             # Extract keywords
             keywords = self.extract_keywords(cleaned_text)
-            
             # Extract key phrases
             key_phrases = self.keyphrase_extractor.extract(cleaned_text)
-            
             # Extract contact information
             emails = self.extract_emails(content)  # Use original content for better detection
             phones = self.extract_phones(content)
-            
             # Detect language
             language = self.detect_language(cleaned_text)
-            
             # Calculate readability scores
             readability = self.calculate_readability_scores(cleaned_text)
-            
             # Extract entities and patterns
             entities = self.extract_entities(cleaned_text)
-            
             # Content analysis
             analysis = self.analyze_content_structure(cleaned_text)
-            
             # Generate document outline
             outline = self.outline_generator.generate_outline(html or content)
-            
+            processing_time = time.time() - start_time
+            processing_quality = self._calculate_processing_quality(cleaned_text, keywords, entities)
             result = {
                 'cleaned_text': cleaned_text,
                 'keywords': keywords,
@@ -114,16 +108,23 @@ class TextProcessor:
                 'readability': readability,
                 'entities': entities,
                 'analysis': analysis,
-                'processing_quality': self._calculate_processing_quality(cleaned_text, keywords, entities)
+                'processing_quality': processing_quality,
+                'status': 'COMPLETED',
+                'summary': analysis.get('summary', '') if isinstance(analysis, dict) else '',
+                'processing_time': processing_time,
+                'performance_score': processing_quality,
             }
-            
             logger.info(f"Text processing complete. Extracted {len(keywords)} keywords, "
                        f"{len(emails)} emails, {len(phones)} phones")
             return result
-            
         except Exception as e:
             logger.error(f"Text processing failed: {str(e)}")
-            raise
+            return {
+                'status': 'FAILED',
+                'summary': f'Processing failed: {str(e)}',
+                'processing_time': 0,
+                'performance_score': 0,
+            }
     
     def deep_clean_text(self, text: str) -> str:
         """Comprehensive text cleaning and normalization"""
@@ -181,60 +182,51 @@ class TextProcessor:
         """Extract keywords using frequency analysis and filtering"""
         if not text:
             return []
-        
         logger.debug("Extracting keywords from text")
-        
         # Convert to lowercase and split into words
         words = re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())
-        
         # Filter out stopwords
         filtered_words = [word for word in words if word not in self.stopwords]
-        
         # Count word frequencies
         word_freq = Counter(filtered_words)
-        
         # Extract n-grams (2-word and 3-word phrases)
         bigrams = self._extract_ngrams(text, 2)
         trigrams = self._extract_ngrams(text, 3)
-        
         # Combine single words and n-grams
         all_terms = {}
-        
         # Add single words
         for word, freq in word_freq.most_common():
             if len(word) >= 3:  # Minimum word length
                 all_terms[word] = {
-                    'term': word,
+                    'keyword': word,
                     'frequency': freq,
                     'type': 'word',
                     'score': freq * len(word)  # Basic scoring
                 }
-        
         # Add bigrams
         for bigram, freq in bigrams.most_common(10):
             if freq >= 2:  # Minimum frequency for phrases
                 all_terms[bigram] = {
-                    'term': bigram,
+                    'keyword': bigram,
                     'frequency': freq,
                     'type': 'bigram',
                     'score': freq * 2  # Bonus for phrases
                 }
-        
         # Add trigrams
         for trigram, freq in trigrams.most_common(5):
             if freq >= 2:
                 all_terms[trigram] = {
-                    'term': trigram,
+                    'keyword': trigram,
                     'frequency': freq,
                     'type': 'trigram',
                     'score': freq * 3  # Higher bonus for longer phrases
                 }
-        
         # Sort by score and return top keywords
         keywords = sorted(all_terms.values(), key=lambda x: x['score'], reverse=True)
-        result = keywords[:max_keywords]
-        
-        logger.debug(f"Extracted {len(result)} keywords")
+        # Filter out empty or whitespace-only terms
+        filtered_keywords = [k for k in keywords if k.get('keyword', '').strip()]
+        result = filtered_keywords[:max_keywords]
+        logger.debug(f"Extracted {len(result)} keywords (after filtering empty terms)")
         return result
     
     def _extract_ngrams(self, text: str, n: int) -> Counter:

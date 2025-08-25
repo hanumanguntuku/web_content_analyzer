@@ -461,7 +461,7 @@ def test_system_requirements():
         "backend/src/services/integrated_analysis_service.py",
         "backend/src/utils/exceptions.py",
         "backend/src/models/data_models.py",
-        "frontend/enhanced_app.py"
+    "frontend/enhanced_app.py"
     ]
     
     files_present = 0

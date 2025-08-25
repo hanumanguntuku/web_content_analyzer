@@ -248,7 +248,7 @@ cd backend
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 2 - Frontend  
-streamlit run frontend/app.py --server.port 8501
+streamlit run frontend/enhanced_app.py --server.port 8501
 
 # Access the application
 # Frontend: http://localhost:8501
@@ -606,8 +606,7 @@ web_content_analyzer/
 │   ├── 📁 src/
 │   │   ├── 📁 components/        # UI components
 │   │   └── 📁 services/          # Frontend services
-│   ├── 📄 app.py                 # Main Streamlit app
-│   ├── 📄 enhanced_app.py        # Enhanced frontend
+│   ├── 📄 enhanced_app.py        # Main Streamlit app (enhanced)
 │   └── 📄 requirements.txt       # Frontend dependencies
 │
 ├── 📁 tests/                     # Test suite

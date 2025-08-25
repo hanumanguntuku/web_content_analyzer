@@ -64,7 +64,7 @@ def start_frontend():
     
     frontend_process = subprocess.Popen([
         sys.executable, "-m", "streamlit", "run", 
-        "app.py", 
+    "enhanced_app.py",
         "--server.port", "8501",
         "--server.headless", "true"
     ])

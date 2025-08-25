@@ -165,7 +165,7 @@ Analysis 7 6. Success Validation & Testing 8 7. Extension Opportunities
 >
 > │ ├── templates/ \# REPORT TEMPLATES │ │ └── report_template.html
 >
-> │ ├── app.py
+> │ ├── enhanced_app.py
 >
 > │ ├── requirements.txt │ └── Dockerfile
 >

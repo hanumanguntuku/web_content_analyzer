@@ -23,8 +23,10 @@ def format_analysis_results(results: Dict[str, Any]) -> Dict[str, Any]:
     technical_metadata = results.get('technical_metadata', {})
     metadata = results.get('metadata', {})
 
-    # Content type extraction (handle dict or object, enum to string)
-    if hasattr(content_analysis, 'content_type'):
+    # Content type extraction: prefer top-level, then content_analysis
+    if 'content_type' in results and results['content_type']:
+        content_type = str(results['content_type'])
+    elif hasattr(content_analysis, 'content_type'):
         content_type = str(getattr(content_analysis, 'content_type', 'unknown'))
     elif isinstance(content_analysis, dict):
         content_type = str(content_analysis.get('content_type', 'unknown'))

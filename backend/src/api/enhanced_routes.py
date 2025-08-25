@@ -87,7 +87,7 @@ async def get_status():
             },
             "limits": {
                 "max_content_size": getattr(settings, 'max_content_size', 10 * 1024 * 1024),
-                "request_timeout": getattr(settings, 'request_timeout', 30),
+                "request_timeout": getattr(settings, 'request_timeout', 120),
                 "rate_limit_requests": getattr(settings, 'rate_limit_requests', 100)
             },
             "health": health_info,

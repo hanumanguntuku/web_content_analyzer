@@ -342,11 +342,13 @@ class ReportService:
                 
                 # Processing information
                 processing_status=ProcessingStatus.COMPLETED,
-                processing_time=time.time() - start_time,
+                processing_time=metrics.get('processing_time', time.time() - start_time),
                 analysis_timestamp=datetime.now(),
                 
-                # Quality score
-                overall_quality_score=metrics['quality_score']
+                # Quality scores
+                overall_quality_score=metrics.get('quality_score', 0.0),
+                extraction_quality=processed_content.extraction_quality,
+                processing_quality=processed_content.processing_quality
             )
             
             logger.info(f"Report generated successfully for {url}")

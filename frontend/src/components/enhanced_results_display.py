@@ -15,16 +15,16 @@ def render_analysis_summary(analysis_report: Dict[str, Any]):
     """Render high-level analysis summary"""
     st.markdown("## 📊 Analysis Summary")
     
-    # Extract key metrics
-    metrics = analysis_report.get("metrics", {})
+    performance_metrics = analysis_report.get("performance_metrics", {})
+    content_analysis = analysis_report.get("content_analysis", {})
     url = analysis_report.get("url", "")
     title = analysis_report.get("title", "Unknown Title")
-    status = analysis_report.get("status", "unknown")
+    status = analysis_report.get("processing_status", "unknown")
     
     # Status indicator
-    if status == "COMPLETED":
+    if status == "completed":
         st.success(f"✅ Analysis completed successfully")
-    elif status == "FAILED":
+    elif status == "failed":
         st.error(f"❌ Analysis failed")
     else:
         st.warning(f"⚠️ Analysis status: {status}")
@@ -35,19 +35,19 @@ def render_analysis_summary(analysis_report: Dict[str, Any]):
     with col1:
         st.metric(
             "Content Size",
-            f"{metrics.get('content_size', 0):,} bytes",
+            f"{performance_metrics.get('content_size', 0):,} bytes",
             delta=None
         )
     
     with col2:
         st.metric(
             "Word Count",
-            f"{metrics.get('word_count', 0):,}",
+            f"{analysis_report.get('word_count', 0):,}",
             delta=None
         )
     
     with col3:
-        processing_time = metrics.get('processing_time', 0)
+        processing_time = analysis_report.get('processing_time', 0)
         st.metric(
             "Processing Time",
             f"{processing_time:.2f}s",
@@ -55,10 +55,10 @@ def render_analysis_summary(analysis_report: Dict[str, Any]):
         )
     
     with col4:
-        performance_score = metrics.get('performance_score', 0)
+        overall_quality_score = analysis_report.get('overall_quality_score', 0)
         st.metric(
-            "Performance Score",
-            f"{performance_score:.1f}/100",
+            "Overall Score",
+            f"{overall_quality_score:.1f}/100",
             delta=None
         )
     
@@ -72,12 +72,12 @@ def render_analysis_summary(analysis_report: Dict[str, Any]):
         st.write("**Language:**", analysis_report.get("language", "Unknown"))
     
     with col2:
-        st.write("**Content Type:**", analysis_report.get("content_type", "Unknown"))
-        analyzed_at = analysis_report.get("analyzed_at")
+        st.write("**Content Type:**", content_analysis.get("content_type", "Unknown"))
+        analyzed_at = analysis_report.get("analysis_timestamp")
         if analyzed_at:
             st.write("**Analyzed At:**", analyzed_at)
         
-        readability = metrics.get('readability_score', 0)
+        readability = content_analysis.get('readability_score', 0)
         if readability > 80:
             st.write("**Readability:**", f"🟢 Excellent ({readability:.1f})")
         elif readability > 60:
@@ -150,20 +150,21 @@ def render_performance_metrics(analysis_report: Dict[str, Any]):
     """Render performance and quality metrics"""
     st.markdown("## ⚡ Performance & Quality Metrics")
     
-    metrics = analysis_report.get("metrics", {})
+    performance_metrics = analysis_report.get("performance_metrics", {})
+    content_analysis = analysis_report.get("content_analysis", {})
     
     # Create performance dashboard
     col1, col2 = st.columns(2)
     
     with col1:
         # Performance gauge
-        performance_score = metrics.get('performance_score', 0)
+        overall_quality_score = analysis_report.get('overall_quality_score', 0)
         
         fig = go.Figure(go.Indicator(
             mode = "gauge+number+delta",
-            value = performance_score,
+            value = overall_quality_score,
             domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Overall Performance Score"},
+            title = {'text': "Overall Quality Score"},
             delta = {'reference': 80},
             gauge = {
                 'axis': {'range': [None, 100]},
@@ -185,7 +186,7 @@ def render_performance_metrics(analysis_report: Dict[str, Any]):
     
     with col2:
         # Readability gauge
-        readability_score = metrics.get('readability_score', 0)
+        readability_score = content_analysis.get('readability_score', 0)
         
         fig = go.Figure(go.Indicator(
             mode = "gauge+number",
@@ -209,14 +210,14 @@ def render_performance_metrics(analysis_report: Dict[str, Any]):
     st.markdown("### 📈 Detailed Metrics")
     
     metrics_data = [
-        ["Processing Time", f"{metrics.get('processing_time', 0):.2f} seconds"],
-        ["Content Size", f"{metrics.get('content_size', 0):,} bytes"],
-        ["Word Count", f"{metrics.get('word_count', 0):,} words"],
-        ["Keyword Density", f"{metrics.get('keyword_density', 0):.2%}"],
-        ["Image Count", f"{metrics.get('image_count', 0):,} images"],
-        ["Link Count", f"{metrics.get('link_count', 0):,} links"],
-        ["Performance Score", f"{metrics.get('performance_score', 0):.1f}/100"],
-        ["Readability Score", f"{metrics.get('readability_score', 0):.1f}/100"]
+        ["Processing Time (s)", f"{analysis_report.get('processing_time', 0):.4f}"],
+        ["Content Size (bytes)", f"{performance_metrics.get('content_size', 0):,}"],
+        ["Word Count", f"{analysis_report.get('word_count', 0):,}"],
+        ["Readability Score", f"{content_analysis.get('readability_score', 0):.1f}/100"],
+        ["Overall Quality Score", f"{analysis_report.get('overall_quality_score', 0):.1f}/100"],
+        ["Extraction Quality", f"{analysis_report.get('extraction_quality', 0):.1f}/100"],
+        ["Processing Quality", f"{analysis_report.get('processing_quality', 0):.1f}/100"],
+        ["HTTP Status", f"{performance_metrics.get('http_status', 'N/A')}"],
     ]
     
     df_metrics = pd.DataFrame(metrics_data, columns=["Metric", "Value"])

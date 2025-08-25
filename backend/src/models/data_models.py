@@ -163,6 +163,18 @@ class ProcessedContent(BaseModel):
     external_links: List[Dict[str, Any]] = Field(default_factory=list, description="External links")
     images: List[Dict[str, Any]] = Field(default_factory=list, description="Images metadata")
     contact_information: Dict[str, List[str]] = Field(default_factory=dict, description="Contact information")
+    # Additional summary/metrics fields for frontend completeness
+    processing_time: float = Field(default=0.0, description="Total processing time in seconds")
+    performance_score: float = Field(default=0.0, description="Overall performance score")
+    scraping_time: float = Field(default=0.0, description="Scraping time in seconds")
+    extraction_time: float = Field(default=0.0, description="Content extraction time in seconds")
+    analysis_time: float = Field(default=0.0, description="Analysis time in seconds")
+    content_size: int = Field(default=0, description="Content size in bytes")
+    content_quality_score: float = Field(default=0.0, description="Content quality score")
+    extraction_quality: float = Field(default=0.0, description="Extraction quality score")
+    http_status: int = Field(default=200, description="HTTP status code")
+    response_time: float = Field(default=0.0, description="Response time in seconds")
+    redirect_count: int = Field(default=0, description="Number of redirects")
 
 # Analysis Report Models
 class ContentAnalysis(BaseModel):
@@ -182,17 +194,19 @@ class AnalysisMetrics(BaseModel):
     scraping_time: float = Field(default=0.0, description="Scraping time in seconds")
     extraction_time: float = Field(default=0.0, description="Content extraction time in seconds")
     analysis_time: float = Field(default=0.0, description="Analysis time in seconds")
-    
     # Content metrics
     content_size: int = Field(default=0, description="Content size in bytes")
     word_count: int = Field(default=0, description="Word count")
     character_count: int = Field(default=0, description="Character count")
-    
+    paragraph_count: int = Field(default=0, description="Paragraph count")
+    sentence_count: int = Field(default=0, description="Sentence count")
+    readability_score: float = Field(default=0.0, description="Readability score")
+    image_count: int = Field(default=0, description="Number of images")
+    link_count: int = Field(default=0, description="Number of links")
     # Quality metrics
     performance_score: float = Field(default=0.0, description="Overall performance score")
     content_quality_score: float = Field(default=0.0, description="Content quality score")
     extraction_quality: float = Field(default=0.0, description="Extraction quality score")
-    
     # Technical metrics
     http_status: int = Field(default=200, description="HTTP status code")
     response_time: float = Field(default=0.0, description="Response time in seconds")
