@@ -10,6 +10,7 @@ import pandas as pd
 from typing import Dict, Any, List, Optional
 import time
 from datetime import datetime
+from ..utils.pdf_generator import generate_pdf_report
 
 def render_analysis_summary(analysis_report: Dict[str, Any]):
     """Render high-level analysis summary"""
@@ -505,8 +506,16 @@ Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywo
                 st.success("Summary copied to clipboard!")
         
         with col2:
-            if st.button("📊 Download Report"):
-                st.success("Report download feature coming soon!")
+            try:
+                pdf_data = generate_pdf_report(analysis_result)
+                st.download_button(
+                    label="📊 Download Report",
+                    data=pdf_data,
+                    file_name=f"analysis_report_{analysis_result.get('title', 'report')}.pdf",
+                    mime="application/pdf"
+                )
+            except Exception as e:
+                st.error("Failed to generate PDF report.")
         
         with col3:
             if st.button("🔄 Analyze Another URL"):
