@@ -281,52 +281,6 @@ def render_media_analysis(analysis_report: Dict[str, Any]):
                     icon = "🔗" if link_type == "external" else "📝"
                     st.write(f"{icon} [{text}]({href})")
 
-def render_metadata_analysis(analysis_report: Dict[str, Any]):
-    """Render metadata and technical analysis"""
-    metadata = analysis_report.get("metadata", {})
-    
-    if metadata:
-        st.markdown("## 🔍 Technical Analysis")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### 🛡️ Security Analysis")
-            st.write("**Security Scanned:**", "✅ Yes" if metadata.get('security_scanned') else "❌ No")
-            
-            if metadata.get('deep_analysis_enabled'):
-                st.write("**Deep Analysis:**", "✅ Enabled")
-                
-                # Sentiment analysis if available
-                sentiment_score = metadata.get('sentiment_score')
-                if sentiment_score is not None:
-                    if sentiment_score > 0.1:
-                        st.write("**Content Sentiment:**", f"😊 Positive ({sentiment_score:.2f})")
-                    elif sentiment_score < -0.1:
-                        st.write("**Content Sentiment:**", f"😔 Negative ({sentiment_score:.2f})")
-                    else:
-                        st.write("**Content Sentiment:**", f"😐 Neutral ({sentiment_score:.2f})")
-        
-        with col2:
-            st.markdown("### 📊 Analysis Details")
-            quality_score = metadata.get('content_quality', 0)
-            st.write(f"**Content Quality:** {quality_score:.2f}/1.0")
-            
-            processing_stage = metadata.get('processing_stage', 'unknown')
-            st.write(f"**Processing Stage:** {processing_stage}")
-            
-            analysis_id = metadata.get('analysis_id')
-            if analysis_id:
-                st.write(f"**Analysis ID:** `{analysis_id}`")
-        
-        # Show entities if available
-        entities = metadata.get('entities', [])
-        if entities:
-            st.markdown("### 🏷️ Extracted Entities")
-            entity_df = pd.DataFrame(entities[:20])  # Show top 20 entities
-            if not entity_df.empty:
-                st.dataframe(entity_df, use_container_width=True)
-
 def render_error_display(error_data: Dict[str, Any]):
     """Render error information in a user-friendly way"""
     st.markdown("## ❌ Analysis Error")
@@ -486,7 +440,6 @@ def render_enhanced_results(analysis_result: Dict[str, Any]):
         render_contact_info(analysis_result)
 
         # Technical and Metadata
-        render_metadata_analysis(analysis_result)
         render_accessibility_info(analysis_result)
         
         # Export options
