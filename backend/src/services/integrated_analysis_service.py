@@ -23,8 +23,10 @@ from ..models.data_models import (
     AnalysisMetrics,
     ProcessedContent,
     ScrapingStatus,
-    ProcessingStage
+    ProcessingStage,
+    ContentAnalysis
 )
+from ..services.llm_service import GeminiLLMService
 from ..utils.exceptions import (
     ScrapingException,
     ExtractionException,
@@ -67,6 +69,7 @@ class IntegratedAnalysisService:
         self.web_scraper = WebScraper()
         self.report_service = ReportService()
         self.content_detection_service = ContentTypeDetectionService()
+        self.llm_service = GeminiLLMService()
         
         # Data layer components
         self.content_extractor = ContentExtractor()
@@ -152,40 +155,40 @@ class IntegratedAnalysisService:
             except Exception as e:
                 logger.warning(f"[DEBUG] Could not stringify processed_content: {e}")
 
-            # Step 3: Detect content type
+            # Step 3: Perform LLM-based analysis in parallel
+            llm_tasks = {
+                "summary": self.llm_service.get_content_summary(processed_content.cleaned_text),
+                "sentiment": self.llm_service.get_sentiment_and_tone(processed_content.cleaned_text),
+                "seo": self.llm_service.get_seo_recommendations(
+                    processed_content.cleaned_text, 
+                    scraped_data.title, 
+                    [kw['keyword'] for kw in processed_content.keywords[:5]]
+                ),
+                "readability": self.llm_service.get_readability_and_accessibility(processed_content.cleaned_text)
+            }
+            
+            llm_results = await asyncio.gather(*llm_tasks.values(), return_exceptions=True)
+            
+            llm_analysis = dict(zip(llm_tasks.keys(), llm_results))
+
+            # Log any LLM errors but don't fail the whole analysis
+            for task, result in llm_analysis.items():
+                if isinstance(result, Exception):
+                    logger.error(f"LLM task '{task}' failed: {result}")
+                    llm_analysis[task] = None # Nullify failed tasks
+
+            # Step 4: Detect content type
             content_type, confidence, detection_details = await self.content_detection_service.detect_content_type(
                 processed_content, url
             )
 
-            # Step 4a: Chunk content and call LLM for each chunk
-            try:
-                from src.services.llm_service import GeminiLLMService
-                llm_service = GeminiLLMService()
-                chunks = self.text_processor.chunk_content_for_llm(processed_data.get('cleaned_text', ''))
-                chunk_summaries = []
-                for chunk in chunks:
-                    chunk_summary = await llm_service.analyze_content(
-                        outline=processed_data.get('outline', []),
-                        key_phrases=processed_data.get('key_phrases', []),
-                        summary=scraped_data.description or '',
-                        full_text=chunk['content']
-                    )
-                    chunk_summaries.append(chunk_summary)
-                # Aggregate summaries (simple join, can be improved)
-                ai_summary = '\n\n'.join(chunk_summaries)
-            except Exception as e:
-                logger.error(f"LLM call failed: {str(e)}")
-                ai_summary = None
-                chunk_summaries = []
-
+            # Step 5: Generate the final report, now including LLM analysis
             analysis_report = await self.report_service.generate_analysis_report(
-                processed_content, scraped_data, url
+                processed_content, 
+                scraped_data, 
+                url,
+                llm_analysis # Pass the LLM results to the report service
             )
-            # Attach only AI summary to report metadata (no chunk_summaries)
-            if hasattr(analysis_report, 'metadata') and isinstance(analysis_report.metadata, dict):
-                analysis_report.metadata['ai_summary'] = ai_summary
-            else:
-                analysis_report.metadata = {'ai_summary': ai_summary}
 
             logger.info(f"✅ Analysis completed for {url}")
             return analysis_report

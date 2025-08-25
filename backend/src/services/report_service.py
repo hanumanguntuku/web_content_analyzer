@@ -291,7 +291,8 @@ class ReportService:
     async def generate_analysis_report(self, 
                                      processed_content: ProcessedContent,
                                      scraped_data: ScrapedContent,
-                                     url: str) -> AnalysisReport:
+                                     url: str,
+                                     llm_analysis: Optional[Dict[str, Any]] = None) -> AnalysisReport:
         """Generate comprehensive analysis report"""
         
         try:
@@ -308,12 +309,17 @@ class ReportService:
                 processed_content, metrics
             )
             
-            # Build content analysis
-            content_analysis = self._build_content_analysis(processed_content, insights)
+            # Build content analysis, now with LLM data
+            content_analysis = self._build_content_analysis(processed_content, insights, llm_analysis)
             
             # Build technical metadata
             technical_metadata = self._build_technical_metadata(scraped_data, url)
             
+            # Prepare metadata for the final report, including the raw summary
+            report_metadata = {
+                'ai_summary': llm_analysis.get('summary') if llm_analysis else "LLM analysis not available."
+            }
+
             # Generate final report
             report = AnalysisReport(
                 url=url,
@@ -348,7 +354,8 @@ class ReportService:
                 # Quality scores
                 overall_quality_score=metrics.get('quality_score', 0.0),
                 extraction_quality=processed_content.extraction_quality,
-                processing_quality=processed_content.processing_quality
+                processing_quality=processed_content.processing_quality,
+                metadata=report_metadata
             )
             
             logger.info(f"Report generated successfully for {url}")
@@ -358,10 +365,17 @@ class ReportService:
             logger.error(f"Error generating report for {url}: {str(e)}")
             raise ProcessingException(f"Report generation failed: {str(e)}")
     
-    def _build_content_analysis(self, processed_content: ProcessedContent, 
-                              insights: Dict[str, Any]) -> ContentAnalysis:
-        """Build content analysis object"""
+    def _build_content_analysis(self, 
+                              processed_content: ProcessedContent, 
+                              insights: Dict[str, Any],
+                              llm_analysis: Optional[Dict[str, Any]] = None) -> ContentAnalysis:
+        """Build content analysis object, incorporating LLM results if available."""
         
+        llm_analysis = llm_analysis or {}
+        sentiment_data = llm_analysis.get('sentiment') or {}
+        seo_data = llm_analysis.get('seo') or {}
+        readability_data = llm_analysis.get('readability') or {}
+
         # Map quality assessment to enum
         quality_mapping = {
             'excellent': QualityLevel.EXCELLENT,
@@ -383,12 +397,18 @@ class ReportService:
         return ContentAnalysis(
             content_type=content_type_mapping.get(insights['content_classification'], ContentType.UNKNOWN),
             quality_level=quality_mapping.get(insights['quality_assessment'], QualityLevel.FAIR),
-            readability_score=processed_content.readability_score,
-            sentiment_score=processed_content.sentiment_score,
+            readability_score=readability_data.get('readability_score', processed_content.readability_score),
+            sentiment_score=sentiment_data.get('sentiment_score', processed_content.sentiment_score),
+            sentiment_label=sentiment_data.get('sentiment_label'),
+            detected_tones=sentiment_data.get('detected_tones', []),
             topic_categories=processed_content.topics,
             key_themes=[kw['keyword'] for kw in insights['keywords'][:5]],
             content_density=len(processed_content.cleaned_text) / max(1, processed_content.word_count),
-            uniqueness_score=85.0  # Placeholder - would need comparison logic
+            uniqueness_score=85.0,  # Placeholder
+            seo_score=seo_data.get('overall_score', 0.0),
+            seo_recommendations=seo_data.get('recommendations', []),
+            accessibility_score=readability_data.get('readability_score', 0.0), # Using readability as a proxy
+            accessibility_notes=readability_data.get('accessibility_notes', [])
         )
     
     def _build_technical_metadata(self, scraped_data: ScrapedContent, url: str) -> TechnicalMetadata:

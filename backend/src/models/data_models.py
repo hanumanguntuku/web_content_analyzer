@@ -181,12 +181,18 @@ class ContentAnalysis(BaseModel):
     """Detailed content analysis results"""
     content_type: ContentType = Field(default=ContentType.UNKNOWN, description="Classified content type")
     quality_level: QualityLevel = Field(..., description="Content quality assessment")
-    readability_score: float = Field(default=0.0, description="Readability score")
-    sentiment_score: Optional[float] = Field(default=None, description="Sentiment analysis score")
+    readability_score: float = Field(default=0.0, description="Readability score (e.g., Flesch Reading Ease)")
+    sentiment_score: Optional[float] = Field(default=None, description="Sentiment analysis score (-1 to 1)")
+    sentiment_label: Optional[str] = Field(default=None, description="Sentiment label (e.g., Positive, Neutral)")
+    detected_tones: List[str] = Field(default_factory=list, description="Detected content tones (e.g., Formal, Optimistic)")
     topic_categories: List[str] = Field(default_factory=list, description="Topic categories")
     key_themes: List[str] = Field(default_factory=list, description="Key themes")
     content_density: float = Field(default=0.0, description="Content density score")
     uniqueness_score: float = Field(default=0.0, description="Content uniqueness score")
+    seo_score: float = Field(default=0.0, description="SEO friendliness score (0-100)")
+    seo_recommendations: List[str] = Field(default_factory=list, description="Actionable SEO recommendations")
+    accessibility_score: float = Field(default=0.0, description="Accessibility score (0-100)")
+    accessibility_notes: List[str] = Field(default_factory=list, description="Actionable accessibility recommendations")
 
 class AnalysisMetrics(BaseModel):
     """Performance and analysis metrics"""
