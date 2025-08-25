@@ -356,6 +356,98 @@ def render_error_display(error_data: Dict[str, Any]):
     else:
         st.info("🔄 **General Error**: Please try again. If the problem persists, check the URL and your internet connection.")
 
+def render_contact_info(analysis_report: Dict[str, Any]):
+    """Renders extracted contact information."""
+    contact_info = analysis_report.get("contact_information", {})
+    emails = contact_info.get("emails", [])
+    phones = contact_info.get("phones", [])
+
+    if emails or phones:
+        st.markdown("## 📞 Contact Information")
+        col1, col2 = st.columns(2)
+        with col1:
+            if emails:
+                st.markdown("### 📧 Emails Found")
+                for email in emails:
+                    st.write(f"• {email}")
+            else:
+                st.info("No emails found.")
+        
+        with col2:
+            if phones:
+                st.markdown("### ☎️ Phone Numbers Found")
+                for phone in phones:
+                    st.write(f"• {phone}")
+            else:
+                st.info("No phone numbers found.")
+
+def render_seo_analysis(analysis_report: Dict[str, Any]):
+    """Renders SEO analysis and recommendations."""
+    content_analysis = analysis_report.get("content_analysis", {})
+    seo_score = content_analysis.get("seo_score", 0)
+    recommendations = content_analysis.get("seo_recommendations", [])
+
+    st.markdown("## 📈 SEO Analysis & Recommendations")
+    
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=seo_score,
+        title={'text': "SEO Score"},
+        domain={'x': [0, 1], 'y': [0, 1]},
+        gauge={
+            'axis': {'range': [None, 100]},
+            'steps': [
+                {'range': [0, 40], 'color': "red"},
+                {'range': [40, 70], 'color': "yellow"},
+                {'range': [70, 100], 'color': "green"}
+            ],
+            'bar': {'color': "darkblue"},
+        }
+    ))
+    fig.update_layout(height=250)
+    st.plotly_chart(fig, use_container_width=True)
+
+    if recommendations:
+        st.markdown("### 💡 Recommendations")
+        for rec in recommendations:
+            st.success(f"• {rec}")
+    else:
+        st.info("No specific SEO recommendations available.")
+
+def render_sentiment_and_tone(analysis_report: Dict[str, Any]):
+    """Renders sentiment and tone analysis."""
+    content_analysis = analysis_report.get("content_analysis", {})
+    sentiment_score = content_analysis.get("sentiment_score")
+    sentiment_label = content_analysis.get("sentiment_label", "Neutral")
+    tones = content_analysis.get("detected_tones", [])
+
+    st.markdown("## 😊 Sentiment & Tone Analysis")
+    
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if sentiment_score is not None:
+            st.metric("Sentiment Score", f"{sentiment_score:.2f}", delta=sentiment_label)
+        else:
+            st.info("Sentiment score not available.")
+
+    with col2:
+        if tones:
+            st.markdown("### Detected Tones")
+            st.write(" • ".join(tones))
+        else:
+            st.info("No specific tones detected.")
+
+def render_accessibility_info(analysis_report: Dict[str, Any]):
+    """Renders accessibility information."""
+    content_analysis = analysis_report.get("content_analysis", {})
+    notes = content_analysis.get("accessibility_notes", [])
+
+    if notes:
+        st.markdown("### ♿ Accessibility Notes")
+        for note in notes:
+            st.warning(f"• {note}")
+
 def render_enhanced_results(analysis_result: Dict[str, Any]):
     """
     Main function to render comprehensive analysis results
@@ -383,11 +475,18 @@ def render_enhanced_results(analysis_result: Dict[str, Any]):
         # Performance metrics
         render_performance_metrics(analysis_result)
         
-        # Media analysis
-        render_media_analysis(analysis_result)
+        # New LLM-driven sections
+        st.markdown("---")
+        render_sentiment_and_tone(analysis_result)
+        render_seo_analysis(analysis_result)
         
-        # Metadata analysis
+        # Media and Contacts
+        render_media_analysis(analysis_result)
+        render_contact_info(analysis_result)
+
+        # Technical and Metadata
         render_metadata_analysis(analysis_result)
+        render_accessibility_info(analysis_result)
         
         # Export options
         st.markdown("## 💾 Export Results")
@@ -399,9 +498,9 @@ def render_enhanced_results(analysis_result: Dict[str, Any]):
 Website Analysis Summary
 URL: {analysis_result.get('url', '')}
 Title: {analysis_result.get('title', '')}
-Word Count: {analysis_result.get('metrics', {}).get('word_count', 0):,}
-Performance Score: {analysis_result.get('metrics', {}).get('performance_score', 0):.1f}/100
-Keywords: {', '.join(analysis_result.get('keywords', [])[:10])}
+Word Count: {analysis_result.get('word_count', 0):,}
+Overall Score: {analysis_result.get('overall_quality_score', 0):.1f}/100
+Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywords', [])[:5]])}
                 """.strip()
                 st.success("Summary copied to clipboard!")
         
