@@ -3,6 +3,7 @@ Enhanced Web Content Analyzer - M1-PRES-05 Implementation
 Complete Streamlit frontend integrating all Milestone 1 features
 """
 import streamlit as st
+import pandas as pd
 import time
 import threading
 from typing import Dict, Any, Optional
@@ -19,17 +20,8 @@ from src.components.enhanced_progress import (
 from src.services.enhanced_api_client import (
     get_api_client,
     test_backend_connection,
-    analyze_website
-)
-from src.components.enhanced_progress import (
-    render_progress_section,
-    ProgressReporter,
-    update_progress
-)
-from src.services.enhanced_api_client import (
-    get_api_client,
-    test_backend_connection,
-    analyze_website
+    analyze_website,
+    get_analysis_history,
 )
 
 # Configure logging
@@ -233,14 +225,51 @@ def render_sidebar():
                 st.session_state.show_stats = True
         # --- Recent Analyses History ---
         st.markdown("### 📝 Recent Analyses")
-        if 'analysis_history' in st.session_state and st.session_state.analysis_history:
-            for i, history_item in enumerate(reversed(st.session_state.analysis_history[-5:])):
-                url_key = f"sidebar_history_{i}_{history_item['url']}"
-                if st.button(f"🔗 {history_item['url'][:30]}...", key=url_key):
-                    st.session_state.current_analysis_config = {"url": history_item['url']}
-                    st.session_state.analysis_result = history_item['results']
+        if st.button("🔄 Refresh History", key="refresh_history_sidebar"):
+            try:
+                st.session_state.analysis_history = get_analysis_history() or []
+                st.experimental_rerun()
+            except Exception as e:
+                st.warning("Could not refresh history: %s" % str(e))
+
+        history = st.session_state.get('analysis_history', [])
+        if history:
+            # Quick-action buttons for the most recent entries
+            for i, history_item in enumerate(reversed(history[-5:])):
+                url_key = f"sidebar_history_{i}_{history_item.get('url','item') }"
+                if st.button(f"🔗 {history_item.get('url','')[:30]}...", key=url_key):
+                    st.session_state.current_analysis_config = {"url": history_item.get('url')}
+                    st.session_state.analysis_result = history_item.get('results')
                     st.session_state.analysis_complete = True
                     st.experimental_rerun()
+
+            # Compact history table (last 10)
+            try:
+                rows = []
+                for item in reversed(history[-10:]):
+                    ts = item.get('timestamp')
+                    try:
+                        tstr = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(ts))) if ts else 'N/A'
+                    except Exception:
+                        tstr = str(ts)
+                    results = item.get('results') or {}
+                    overall = results.get('overall_quality_score') if isinstance(results, dict) else results.get('overall_quality_score', '-') if isinstance(results, dict) == False else '-'
+                    content = results.get('content_analysis') if isinstance(results, dict) else {}
+                    seo = content.get('seo_score') if isinstance(content, dict) else '-'
+                    readability = content.get('readability_score') if isinstance(content, dict) else '-'
+                    rows.append({
+                        'url': item.get('url', ''),
+                        'time': tstr,
+                        'overall': overall if overall is not None else '-',
+                        'seo': seo if seo is not None else '-',
+                        'readability': readability if readability is not None else '-',
+                    })
+                if rows:
+                    df_side = pd.DataFrame(rows)
+                    st.dataframe(df_side)
+            except Exception:
+                # Sidebar should not crash the app if history has unexpected shape
+                st.write("(Could not render history table)")
         else:
             st.info("No recent analyses yet.")
 
@@ -350,7 +379,7 @@ def main():
             try:
                 with st.spinner("Initializing analysis..."):
                     result = analyze_website(
-                        url=analysis_config["url"],
+                        url=analysis_config.get("url", ""),
                         analysis_config=analysis_config,
                         progress_callback=progress_callback
                     )
@@ -358,7 +387,7 @@ def main():
                 st.session_state.raw_api_response = result
                 st.session_state.analysis_result = result
                 st.session_state.analysis_complete = True
-                # Add to history (like app.py)
+                # Add to history
                 if 'analysis_history' not in st.session_state:
                     st.session_state.analysis_history = []
                 st.session_state.analysis_history.append({
@@ -377,28 +406,9 @@ def main():
                 }
                 st.session_state.analysis_complete = True
                 st.experimental_rerun()
-        # Show example analysis cards if no results/history
-        elif not st.session_state.get('analysis_history'):
-            st.info("👆 Enter a URL and click 'Analyze Website' to see results")
-            st.markdown("### 🎯 What you'll get:")
-            st.markdown("""
-            <div class="feature-card">
-                <strong>📄 Content Summary</strong><br>
-                Key insights and main themes from the website
-            </div>
-            <div class="feature-card">
-                <strong>📈 SEO Analysis</strong><br>
-                Meta tags, headings structure, and optimization tips
-            </div>
-            <div class="feature-card">
-                <strong>📞 Contact Information</strong><br>
-                Extracted emails, phone numbers, and social links
-            </div>
-            <div class="feature-card">
-                <strong>🔍 Technical Details</strong><br>
-                Word count, readability score, and language detection
-            </div>
-            """, unsafe_allow_html=True)
+        # History is shown in the sidebar. Enter a URL above to start analysis.
+        else:
+            st.info("👆 Enter a URL and click 'Analyze Website' to start. Recent analyses appear in the sidebar.")
 
 def initialize_session_state():
     """Initialize session state variables"""
@@ -410,6 +420,15 @@ def initialize_session_state():
     
     if 'show_stats' not in st.session_state:
         st.session_state.show_stats = False
+
+    # Load analysis history into session state (fallback to empty list)
+    if 'analysis_history' not in st.session_state:
+        try:
+            from src.services.enhanced_api_client import get_analysis_history
+            st.session_state.analysis_history = get_analysis_history() or []
+        except Exception as e:
+            logger.debug("Could not initialize analysis_history from backend: %s", e)
+            st.session_state.analysis_history = []
 
 if __name__ == "__main__":
     # Initialize session state

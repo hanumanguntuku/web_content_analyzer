@@ -16,6 +16,30 @@ from urllib.parse import urljoin
 logger = logging.getLogger(__name__)
 
 class EnhancedAPIClient:
+
+    def get_analysis_history(self) -> list:
+        """Get analysis history from backend.
+
+        Returns a list of history entries or an empty list on error.
+        """
+        endpoint = "/api/v1/analyze/history"
+        url = self._get_full_url(endpoint)
+        try:
+            resp = requests.get(url, timeout=min(10, self.timeout))
+            resp.raise_for_status()
+            data = resp.json()
+            # Backend may return { "history": [...] } or a bare list
+            if isinstance(data, dict) and "history" in data:
+                return data.get("history") or []
+            if isinstance(data, list):
+                return data
+            return []
+        except requests.exceptions.RequestException as e:
+            logger.warning("Failed to fetch analysis history: %s", e)
+            return []
+        except ValueError:
+            logger.warning("Failed to decode analysis history JSON response")
+            return []
     """
     Enhanced API client for communication with the backend analysis service
     
@@ -362,11 +386,27 @@ def analyze_website(
         Analysis result or error information
     """
     client = get_api_client()
-    
-    return client.analyze_url(
-        url=url,
-        deep_analysis=analysis_config.get('deep_analysis', True),
-        extract_images=analysis_config.get('extract_images', True),
-        extract_links=analysis_config.get('extract_links', True),
-        progress_callback=progress_callback
-    )
+    if analysis_config.get("batch_mode"):
+        return client.analyze_batch(
+            urls=analysis_config["urls"],
+            deep_analysis=analysis_config.get('deep_analysis', True),
+            extract_images=analysis_config.get('extract_images', True),
+            extract_links=analysis_config.get('extract_links', True)
+        )
+    else:
+        return client.analyze_url(
+            url=url,
+            deep_analysis=analysis_config.get('deep_analysis', True),
+            extract_images=analysis_config.get('extract_images', True),
+            extract_links=analysis_config.get('extract_links', True),
+            progress_callback=progress_callback
+        )
+
+def get_analysis_history():
+    try:
+        client = get_api_client()
+        history = client.get_analysis_history()
+        return history or []
+    except Exception as e:
+        logger.warning("Could not retrieve analysis history: %s", e)
+        return []

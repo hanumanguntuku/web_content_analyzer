@@ -67,56 +67,45 @@ def render_url_input() -> Optional[Dict[str, Any]]:
     """
     st.markdown("### 🔗 Enter Website URL")
     
-    # Create columns for better layout
     col1, col2 = st.columns([3, 1])
-    
+    url = ""
     with col1:
-        # URL input with placeholder
         url = st.text_input(
             "Website URL",
             placeholder="https://example.com",
             help="Enter the URL of the website you want to analyze",
             label_visibility="collapsed"
         )
-    
     with col2:
-        # Quick validation indicator
         if url:
             is_valid, error_msg = validate_url_format(url)
             if is_valid:
                 st.success("✅ Valid URL")
             else:
                 st.error("❌ Invalid")
-    
-    # Show detailed error message if invalid
     if url:
         is_valid, error_msg = validate_url_format(url)
         if not is_valid:
             st.error(f"⚠️ {error_msg}")
             return None
-    
     if not url:
         return None
     
     # Analysis options section
     st.markdown("### ⚙️ Analysis Options")
-    
     col1, col2, col3 = st.columns(3)
-    
     with col1:
         deep_analysis = st.checkbox(
             "Deep Analysis",
             value=True,
             help="Enable advanced text processing, sentiment analysis, and entity extraction"
         )
-    
     with col2:
         extract_images = st.checkbox(
             "Extract Images",
             value=True,
             help="Extract and analyze image information from the page"
         )
-    
     with col3:
         extract_links = st.checkbox(
             "Extract Links",
@@ -171,7 +160,7 @@ def render_url_input() -> Optional[Dict[str, Any]]:
             return None
     
     # Return analysis configuration
-    if url and is_valid:
+    if url:
         return {
             "url": url,
             "deep_analysis": deep_analysis,
@@ -180,7 +169,6 @@ def render_url_input() -> Optional[Dict[str, Any]]:
             "max_content_size": max_content_size,
             "timeout_seconds": timeout_seconds
         }
-    
     return None
 
 def render_analysis_button(analysis_config: Dict[str, Any]) -> bool:
@@ -200,7 +188,12 @@ def render_analysis_button(analysis_config: Dict[str, Any]) -> bool:
     st.markdown("### 🚀 Ready to Analyze")
     
     with st.expander("📋 Analysis Configuration"):
-        st.write("**URL:**", analysis_config["url"])
+        if analysis_config.get("batch_mode"):
+            st.write("**URLs:**")
+            for u in analysis_config["urls"]:
+                st.write(f"- {u}")
+        else:
+            st.write("**URL:**", analysis_config["url"])
         st.write("**Deep Analysis:**", "✅ Enabled" if analysis_config["deep_analysis"] else "❌ Disabled")
         st.write("**Extract Images:**", "✅ Enabled" if analysis_config["extract_images"] else "❌ Disabled")
         st.write("**Extract Links:**", "✅ Enabled" if analysis_config["extract_links"] else "❌ Disabled")
