@@ -127,54 +127,62 @@ class TextProcessor:
             }
     
     def deep_clean_text(self, text: str) -> str:
-        """Comprehensive text cleaning and normalization"""
+        """Comprehensive text cleaning and normalization, including HTML tag removal"""
         if not text:
             return ""
-        
+
         logger.debug("Starting deep text cleaning")
-        
+
+        # Remove HTML tags using BeautifulSoup if available, else fallback to regex
+        try:
+            from bs4 import BeautifulSoup
+            text = BeautifulSoup(text, "lxml").get_text(separator=" ")
+        except Exception:
+            # Fallback: remove tags with regex (less robust)
+            text = re.sub(r'<[^>]+>', ' ', text)
+
         # Unicode normalization
         text = unicodedata.normalize('NFKD', text)
-        
+
         # Remove HTML entities that might have been missed
         text = re.sub(r'&[a-zA-Z0-9#]+;', ' ', text)
-        
+
         # Remove URLs (but keep them for separate extraction)
         text = re.sub(r'https?://[^\s]+', ' [URL] ', text)
-        
+
         # Remove email addresses (but keep them for separate extraction)
         for pattern in self.email_patterns:
             text = re.sub(pattern, ' [EMAIL] ', text, flags=re.IGNORECASE)
-        
+
         # Remove phone numbers (but keep them for separate extraction)
         for pattern in self.phone_patterns:
             text = re.sub(pattern, ' [PHONE] ', text)
-        
+
         # Remove social media handles and hashtags
         text = re.sub(r'@[A-Za-z0-9_]+', ' [MENTION] ', text)
         text = re.sub(r'#[A-Za-z0-9_]+', ' [HASHTAG] ', text)
-        
+
         # Remove special characters but preserve sentence structure
         text = re.sub(r'[^\w\s\.\!\?\,\;\:\-\(\)]', ' ', text)
-        
+
         # Clean up punctuation spacing
-        text = re.sub(r'\s+([\.!\?])', r'\1', text)  # Remove space before punctuation
-        text = re.sub(r'([\.!\?])\s*', r'\1 ', text)  # Ensure space after punctuation
-        
+        text = re.sub(r'\s+([\.\!\?])', r'\1', text)  # Remove space before punctuation
+        text = re.sub(r'([\.\!\?])\s*', r'\1 ', text)  # Ensure space after punctuation
+
         # Remove repeated punctuation
-        text = re.sub(r'([\.!\?]){2,}', r'\1', text)
-        
+        text = re.sub(r'([\.\!\?]){2,}', r'\1', text)
+
         # Remove extra whitespace
         text = re.sub(r'\s+', ' ', text)
-        
+
         # Remove leading/trailing whitespace
         text = text.strip()
-        
+
         # Remove very short "words" that are likely noise
         words = text.split()
         cleaned_words = [word for word in words if len(word) > 1 or word.lower() in ['a', 'i']]
         text = ' '.join(cleaned_words)
-        
+
         logger.debug(f"Deep cleaning complete. Original: {len(text)} chars")
         return text
     
