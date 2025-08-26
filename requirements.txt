@@ -21,6 +21,9 @@ python-multipart==0.0.6
 nltk==3.8.1
 textstat==0.7.3
 
+# ===== LLM INTEGRATION =====
+openai==1.30.5
+
 # ===== DATA PROCESSING & VISUALIZATION =====
 pandas==2.1.4
 plotly==5.17.0
