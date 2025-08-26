@@ -97,6 +97,15 @@ class TextProcessor:
             outline = self.outline_generator.generate_outline(html or content)
             processing_time = time.time() - start_time
             processing_quality = self._calculate_processing_quality(cleaned_text, keywords, entities)
+            # Calculate a main readability score (Flesch-Kincaid or fallback)
+            readability_score = 0.0
+            if isinstance(readability, dict):
+                readability_score = readability.get('flesch_kincaid', 0.0)
+            # Extraction quality: ratio of cleaned text to original content length (simple heuristic)
+            extraction_quality = 0.0
+            if cleaned_text and content:
+                extraction_quality = min(100.0, (len(cleaned_text) / max(1, len(content))) * 100)
+
             result = {
                 'cleaned_text': cleaned_text,
                 'keywords': keywords,
@@ -106,6 +115,8 @@ class TextProcessor:
                 'phones': phones,
                 'language': language,
                 'readability': readability,
+                'readability_score': readability_score,
+                'extraction_quality': extraction_quality,
                 'entities': entities,
                 'analysis': analysis,
                 'processing_quality': processing_quality,
@@ -116,6 +127,30 @@ class TextProcessor:
             }
             logger.info(f"Text processing complete. Extracted {len(keywords)} keywords, "
                        f"{len(emails)} emails, {len(phones)} phones")
+            # If using ProcessedContent model, ensure these fields are set
+            if hasattr(self, 'as_model') and self.as_model:
+                from ..models.data_models import ProcessedContent
+                return ProcessedContent(
+                    url=url if 'url' in locals() else '',
+                    cleaned_text=cleaned_text,
+                    keywords=keywords,
+                    emails=emails,
+                    phones=phones,
+                    language=language,
+                    readability=readability,
+                    analysis=analysis,
+                    processing_quality=processing_quality,
+                    word_count=len(cleaned_text.split()),
+                    character_count=len(cleaned_text),
+                    paragraph_count=cleaned_text.count('\n\n'),
+                    sentence_count=cleaned_text.count('.') + cleaned_text.count('!') + cleaned_text.count('?'),
+                    readability_score=readability_score,
+                    extraction_quality=extraction_quality,
+                    headings=[],
+                    sections=[],
+                    sentiment_score=0.0,
+                    topics=[]
+                )
             return result
         except Exception as e:
             logger.error(f"Text processing failed: {str(e)}")

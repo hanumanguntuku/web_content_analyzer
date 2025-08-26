@@ -126,8 +126,6 @@ class IntegratedAnalysisService:
                 url=url,
                 cleaned_text=processed_data.get('cleaned_text', ''),
                 keywords=processed_data.get('keywords', []),
-                key_phrases=processed_data.get('key_phrases', []),
-                outline=processed_data.get('outline', []),
                 emails=processed_data.get('emails', []),
                 phones=processed_data.get('phones', []),
                 language=processed_data.get('language', 'unknown'),
@@ -139,7 +137,8 @@ class IntegratedAnalysisService:
                 character_count=len(processed_data.get('cleaned_text', '')),
                 paragraph_count=processed_data.get('cleaned_text', '').count('\n\n') + 1,
                 sentence_count=processed_data.get('cleaned_text', '').count('.') + processed_data.get('cleaned_text', '').count('!') + processed_data.get('cleaned_text', '').count('?'),
-                readability_score=processed_data.get('readability', {}).get('flesch_kincaid_grade', 0.0),
+                readability_score=processed_data.get('readability_score', 0.0),
+                extraction_quality=processed_data.get('extraction_quality', 0.0),
                 headings=processed_data.get('analysis', {}).get('headings', []),
                 sections=processed_data.get('analysis', {}).get('sections', []),
                 sentiment_score=0.0,  # Default sentiment score (can be enhanced later with actual sentiment analysis)
