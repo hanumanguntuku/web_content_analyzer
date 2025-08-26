@@ -326,11 +326,10 @@ def main():
     elif st.session_state.get('analysis_complete', False):
         # Show results if we have them
         if 'analysis_result' in st.session_state:
-            if 'raw_api_response' in st.session_state:
-                with st.expander("�️ Raw API Response (from backend)", expanded=True):
-                    st.json(st.session_state.raw_api_response)
-            with st.expander("� Debug Info (Formatted Results)", expanded=False):
-                st.json(st.session_state.analysis_result)
+            # if 'raw_api_response' in st.session_state:
+            #     with st.expander("�️ Raw API Response (from backend)", expanded=True):
+            #         st.json(st.session_state.raw_api_response)
+            # Removed Debug Info (Formatted Results) expander as requested
             render_enhanced_results(st.session_state.analysis_result)
         else:
             st.warning("Analysis completed but no results available.")
