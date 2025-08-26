@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 # Page configuration
 st.set_page_config(
-    page_title="Web Content Analyzer - Milestone 1",
+    page_title="Web Content Analyzer",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -46,7 +46,7 @@ st.set_page_config(
         'Get Help': 'https://github.com/hanumanguntuku/web_content_analyzer',
         'Report a bug': 'https://github.com/hanumanguntuku/web_content_analyzer/issues',
         'About': """
-        # Web Content Analyzer - Milestone 1
+        # Web Content Analyzer
         
         **Intelligent Content Processing System**
         
@@ -172,7 +172,7 @@ def render_app_header():
     st.markdown("""
     <div class="app-header">
         <h1>🔍 Web Content Analyzer</h1>
-        <h3>Intelligent Content Processing - Milestone 1</h3>
+        <h3>Intelligent Content Processing</h3>
         <p>Secure • Intelligent • Comprehensive</p>
     </div>
     """, unsafe_allow_html=True)
