@@ -340,7 +340,9 @@ class ContentLengthDetector:
             return None
 
 class ContentTypeDetectionService:
-    """Main content type detection service combining multiple strategies"""
+    """
+    ContentTypeDetectionService detects the type of web content using an ensemble of strategies (URL patterns, structure, keywords, length).
+    """
     
     def __init__(self):
         self.url_detector = URLPatternDetector()
@@ -352,8 +354,12 @@ class ContentTypeDetectionService:
                                 processed_content: ProcessedContent,
                                 url: str) -> Tuple[ContentType, float, Dict[str, Any]]:
         """
-        Detect content type using ensemble of detection methods
-        Returns: (content_type, confidence, detection_details)
+        Detect the content type of processed content using multiple strategies.
+        Args:
+            processed_content (ProcessedContent): The processed content object.
+            url (str): The source URL.
+        Returns:
+            Tuple[ContentType, float, Dict[str, Any]]: (content_type, confidence, detection_details)
         """
         try:
             logger.info(f"Detecting content type for {url}")

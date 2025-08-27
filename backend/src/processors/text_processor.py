@@ -14,7 +14,10 @@ from .outline_generator import DocumentOutlineGenerator
 logger = logging.getLogger(__name__)
 
 class TextProcessor:
-    """Advanced text processing and content analysis"""
+    """
+    Advanced text processing and content analysis.
+    Provides methods for deep cleaning, keyword extraction, entity recognition, and content analysis.
+    """
     
     def __init__(self):
         """Initialize text processor with patterns and stopwords"""
@@ -71,6 +74,15 @@ class TextProcessor:
         logger.info("TextProcessor initialized with advanced cleaning and analysis capabilities")
     
     def process_content(self, content: str, url: Optional[str] = None, html: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Process raw content and return structured analysis results.
+        Args:
+            content (str): Raw text content.
+            url (Optional[str]): Source URL.
+            html (Optional[str]): Raw HTML content.
+        Returns:
+            Dict[str, Any]: Structured analysis results.
+        """
         """Comprehensive content processing pipeline"""
         import time
         start_time = time.time()
@@ -162,6 +174,13 @@ class TextProcessor:
             }
     
     def deep_clean_text(self, text: str) -> str:
+        """
+        Perform deep cleaning on input text, removing noise and normalizing whitespace.
+        Args:
+            text (str): Input text.
+        Returns:
+            str: Cleaned text.
+        """
         """Comprehensive text cleaning and normalization, including HTML tag removal"""
         if not text:
             return ""
@@ -222,6 +241,14 @@ class TextProcessor:
         return text
     
     def extract_keywords(self, text: str, max_keywords: int = 20) -> List[Dict[str, Any]]:
+        """
+        Extract keywords from text using frequency and context analysis.
+        Args:
+            text (str): Input text.
+            max_keywords (int): Maximum number of keywords to extract.
+        Returns:
+            List[Dict[str, Any]]: List of extracted keywords with metadata.
+        """
         """Extract keywords using frequency analysis and filtering"""
         if not text:
             return []
@@ -285,6 +312,13 @@ class TextProcessor:
         return Counter(ngrams)
     
     def extract_emails(self, text: str) -> List[str]:
+        """
+        Extract email addresses from text.
+        Args:
+            text (str): Input text.
+        Returns:
+            List[str]: List of email addresses found.
+        """
         """Extract email addresses from text"""
         emails = set()
         
@@ -305,6 +339,13 @@ class TextProcessor:
         return list(set(valid_emails))  # Remove duplicates
     
     def extract_phones(self, text: str) -> List[str]:
+        """
+        Extract phone numbers from text.
+        Args:
+            text (str): Input text.
+        Returns:
+            List[str]: List of phone numbers found.
+        """
         """Extract phone numbers from text"""
         phones = set()
         
@@ -332,6 +373,13 @@ class TextProcessor:
         return list(set(formatted_phones))  # Remove duplicates
     
     def detect_language(self, text: str) -> Optional[str]:
+        """
+        Detect the language of the input text.
+        Args:
+            text (str): Input text.
+        Returns:
+            Optional[str]: Detected language code or None.
+        """
         """Simple language detection based on common words"""
         if not text:
             return None
@@ -362,6 +410,13 @@ class TextProcessor:
         return 'unknown'
     
     def calculate_readability_scores(self, text: str) -> Dict[str, float]:
+        """
+        Calculate readability scores for the input text.
+        Args:
+            text (str): Input text.
+        Returns:
+            Dict[str, float]: Readability metrics.
+        """
         """Calculate various readability scores"""
         if not text:
             return {'flesch_kincaid': 0, 'avg_sentence_length': 0, 'avg_word_length': 0}

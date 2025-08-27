@@ -25,7 +25,7 @@ class GeminiLLMService:
             self.openai_client = openai.OpenAI(api_key=self.openai_api_key)
         except Exception as e:
             self.openai_client = None
-            logging.error(f"[LLMService] Failed to initialize OpenAI client: {e}")
+            logging.error("[LLMService] Failed to initialize OpenAI client: %s", e)
 
     async def _call_llm(self, prompt: str, is_json_output: bool = False) -> str:
         """Generic method to call the LLM, handling Gemini and OpenAI fallback."""
@@ -57,7 +57,7 @@ class GeminiLLMService:
                 
                 return await loop.run_in_executor(None, _gemini_call)
             except Exception as gemini_exc:
-                logging.error(f"[LLMService] Gemini API failed: {gemini_exc}. Falling back to OpenAI.")
+                logging.error("[LLMService] Gemini API failed: %s. Falling back to OpenAI.", gemini_exc)
 
         # Fallback to OpenAI
         if not self.openai_client:
@@ -82,7 +82,7 @@ class GeminiLLMService:
             
             return await loop.run_in_executor(None, _openai_call)
         except Exception as openai_exc:
-            logging.error(f"[LLMService] OpenAI fallback failed: {openai_exc}")
+            logging.error("[LLMService] OpenAI fallback failed: %s", openai_exc)
             raise RuntimeError(f"Both Gemini and OpenAI LLM calls failed: {openai_exc}")
 
     async def get_content_summary(self, text: str) -> str:

@@ -9,6 +9,13 @@ class DocumentOutlineGenerator:
         self.heading_pattern = re.compile(r'<h([1-6])[^>]*>(.*?)</h\1>', re.IGNORECASE | re.DOTALL)
 
     def generate_outline(self, html: str) -> List[Dict[str, Any]]:
+        """
+        Generate a hierarchical outline from HTML headings.
+        Args:
+            html (str): HTML content as a string.
+        Returns:
+            List[Dict[str, Any]]: Hierarchical outline structure.
+        """
         # Extract all headings with their level and text
         headings = [
             {'level': int(m.group(1)), 'text': self._clean_text(m.group(2))}
@@ -29,5 +36,11 @@ class DocumentOutlineGenerator:
         return outline
 
     def _clean_text(self, text: str) -> str:
-        # Remove HTML tags and extra whitespace
+        """
+        Remove HTML tags and extra whitespace from heading text.
+        Args:
+            text (str): Raw heading text.
+        Returns:
+            str: Cleaned heading text.
+        """
         return re.sub(r'<[^>]+>', '', text).strip()

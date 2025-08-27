@@ -12,7 +12,10 @@ from ..models.data_models import ExtractedContent, ContentSection
 logger = logging.getLogger(__name__)
 
 class ContentExtractor:
-    """Intelligent content extraction engine"""
+    """
+    Intelligent content extraction engine.
+    Extracts main content, headings, links, images, and metadata from HTML using BeautifulSoup.
+    """
     
     def __init__(self):
         """Initialize content extractor with noise and content selectors"""
@@ -44,7 +47,14 @@ class ContentExtractor:
         logger.info("ContentExtractor initialized with intelligent extraction patterns")
     
     def extract_content(self, soup: BeautifulSoup, url: str) -> ExtractedContent:
-        """Extract meaningful content from HTML soup"""
+        """
+        Extract main content, headings, links, images, and metadata from a BeautifulSoup HTML document.
+        Args:
+            soup (BeautifulSoup): Parsed HTML document.
+            url (str): Source URL.
+        Returns:
+            ExtractedContent: Structured content extraction result.
+        """
         try:
             logger.info(f"Starting content extraction for {url}")
             

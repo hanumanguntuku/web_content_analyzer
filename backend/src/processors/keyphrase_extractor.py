@@ -4,7 +4,7 @@ from collections import Counter
 
 class SimpleKeyPhraseExtractor:
     """
-    Simple key phrase extractor using noun phrase and frequency heuristics.
+    SimpleKeyPhraseExtractor extracts key phrases from text using n-gram frequency heuristics.
     For production, consider using spaCy, RAKE, or KeyBERT.
     """
     def __init__(self, min_len: int = 2, max_len: int = 5, top_n: int = 15):
@@ -13,6 +13,13 @@ class SimpleKeyPhraseExtractor:
         self.top_n = top_n
 
     def extract(self, text: str) -> List[str]:
+        """
+        Extract keyphrases from the input text using n-gram frequency heuristics.
+        Args:
+            text (str): Input text to extract keyphrases from.
+        Returns:
+            List[str]: List of extracted keyphrases.
+        """
         # Lowercase and remove non-alphanumeric except spaces
         clean_text = re.sub(r'[^\w\s]', '', text.lower())
         words = clean_text.split()

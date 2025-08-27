@@ -1,14 +1,16 @@
+from dataclasses import dataclass
+from typing import List
+import socket
+from urllib.parse import parse_qs
 """
 URL Validation & SSRF Prevention - M1-SEC-01 Implementation
 Comprehensive URL validation with security measures to prevent SSRF attacks
 """
 import ipaddress
-import socket
 import logging
-from typing import List, Set, Optional, Dict, Any
-from urllib.parse import urlparse, parse_qs
+from typing import Optional, Dict, Any
+from urllib.parse import urlparse
 import re
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +289,10 @@ class URLValidator:
                 )
         
         # Validate hostname format
-        hostname_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
+        hostname_pattern = (
+            r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?'
+            r'(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
+        )
         if not re.match(hostname_pattern, hostname):
             # Check if it's an IP address
             if not self._is_valid_ip(hostname):
