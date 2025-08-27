@@ -6,7 +6,6 @@ import streamlit as st
 import re
 from typing import Dict, Any, Optional, Tuple
 from urllib.parse import urlparse
-import time
 
 def validate_url_format(url: str) -> Tuple[bool, str]:
     """

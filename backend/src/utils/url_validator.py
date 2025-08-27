@@ -8,18 +8,10 @@ import logging
 from typing import List, Set, Optional, Dict, Any
 from urllib.parse import urlparse, parse_qs
 import re
-from dataclasses import dataclass
+from .validators import ValidationResult
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class ValidationResult:
-    """URL validation result"""
-    is_valid: bool
-    error_type: Optional[str] = None
-    error_message: Optional[str] = None
-    warnings: List[str] = None
-    parsed_url: Optional[Dict[str, Any]] = None
 
 class URLValidator:
     """Comprehensive URL validator with SSRF prevention"""

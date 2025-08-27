@@ -3,8 +3,6 @@ Enhanced API Client - M1-PRES-04 Implementation
 Robust API client with comprehensive error handling and progress tracking
 """
 import requests
-import asyncio
-import aiohttp
 import streamlit as st
 from typing import Dict, Any, Optional, Callable
 import time

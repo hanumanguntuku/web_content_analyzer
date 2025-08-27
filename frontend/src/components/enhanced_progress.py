@@ -4,8 +4,8 @@ Real-time progress tracking for analysis with detailed status updates
 """
 import streamlit as st
 import time
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
+from datetime import datetime
 
 def render_progress_indicator(
     current_stage: str = "initializing",

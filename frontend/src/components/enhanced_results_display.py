@@ -1,7 +1,6 @@
 # --- Add missing imports for error, SEO, and contact info rendering ---
 
 # --- Add stubs for missing functions if not defined ---
-import streamlit as st
 
 def render_error_display(result):
     st.error(result.get('message', 'An error occurred during analysis.'))
@@ -16,14 +15,11 @@ Enhanced Results Display Component - M1-PRES-02 Implementation
 Comprehensive display of analysis results with interactive visualizations
 """
 import streamlit as st
+from typing import Dict, Any
+from ..utils.pdf_generator import generate_pdf_report
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import pandas as pd
-from typing import Dict, Any, List, Optional
-import time
-from datetime import datetime
-from ..utils.pdf_generator import generate_pdf_report
 
 def render_analysis_summary(analysis_report: Dict[str, Any]):
     """Render high-level analysis summary"""
@@ -348,7 +344,7 @@ Keywords: {', '.join([kw.get('keyword', '') for kw in result.get('keywords', [])
                                 file_name=f"analysis_report_{result.get('title', 'report')}_{idx+1}.pdf",
                                 mime="application/pdf"
                             )
-                        except Exception as e:
+                        except Exception:
                             st.error("Failed to generate PDF report.")
                     with col3:
                         if st.button(f"🔄 Analyze Another URL {idx+1}"):
@@ -399,7 +395,7 @@ Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywo
                     file_name=f"analysis_report_{analysis_result.get('title', 'report')}.pdf",
                     mime="application/pdf"
                 )
-            except Exception as e:
+            except Exception:
                 st.error("Failed to generate PDF report.")
         with col3:
             if st.button("🔄 Analyze Another URL"):
@@ -411,15 +407,7 @@ Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywo
         st.error(f"Error displaying results: {str(e)}")
         with st.expander("Error Details"):
             st.exception(e)
-    fig.update_layout(height=250)
-    st.plotly_chart(fig, use_container_width=True)
-
-    if recommendations:
-        st.markdown("### 💡 Recommendations")
-        for rec in recommendations:
-            st.success(f"• {rec}")
-    else:
-        st.info("No specific SEO recommendations available.")
+    # Removed undefined 'fig' and 'recommendations' usage to fix runtime errors.
 
 def render_sentiment_and_tone(analysis_report: Dict[str, Any]):
     """Renders sentiment and tone analysis."""
@@ -509,7 +497,7 @@ Keywords: {', '.join([kw.get('keyword', '') for kw in result.get('keywords', [])
                                 file_name=f"analysis_report_{result.get('title', 'report')}_{idx+1}.pdf",
                                 mime="application/pdf"
                             )
-                        except Exception as e:
+                        except Exception:
                             st.error("Failed to generate PDF report.")
                     with col3:
                         if st.button(f"🔄 Analyze Another URL {idx+1}"):
@@ -560,7 +548,7 @@ Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywo
                         file_name=f"analysis_report_{analysis_result.get('title', 'report')}.pdf",
                         mime="application/pdf"
                     )
-                except Exception as e:
+                except Exception:
                     st.error("Failed to generate PDF report.")
             with col3:
                 if st.button("🔄 Analyze Another URL"):

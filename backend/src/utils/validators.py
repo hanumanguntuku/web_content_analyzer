@@ -450,31 +450,7 @@ class URLValidator:
         """Reset rate limiting counters"""
         self.validation_counts.clear()
         logger.info("Rate limiting counters reset")
-                return False
-            
-            # Basic format check
-            if not self.url_pattern.match(url):
-                return False
-            
-            # Parse URL
-            parsed = urlparse(url)
-            
-            # Basic scheme validation
-            if parsed.scheme not in ('http', 'https'):
-                return False
-            
-            # Basic hostname validation
-            if not parsed.hostname:
-                return False
-            
-            # TODO: Add SSRF prevention in M1-SEC-01
-            # - Block private IP ranges
-            # - Block metadata endpoints
-            # - Add comprehensive security checks
-            
-            return True
-            
-        except Exception:
-            return False
+        
+        # No further actions are needed after resetting rate limits
 
 # Note: Complete security validation will be implemented in M1-SEC phase
