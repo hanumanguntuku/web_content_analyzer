@@ -198,5 +198,25 @@
     "processing_quality": 100.0,
     "seo_score": 65.0,
     "readability_score": 60.0
+  },
+  {
+    "url": "https://toscrape.com/",
+    "title": "Scraping Sandbox",
+    "timestamp": "2025-08-27 19:31:07.422289",
+    "overall_quality_score": 71.45,
+    "extraction_quality": 22.543792840822544,
+    "processing_quality": 100.0,
+    "seo_score": 65.0,
+    "readability_score": 60.0
+  },
+  {
+    "url": "https://www.scrapethissite.com/faq/",
+    "title": "Frequently Asked Questions | Scrape This Site | A public sandbox for learning web scraping",
+    "timestamp": "2025-08-27 19:31:10.995457",
+    "overall_quality_score": 69.745,
+    "extraction_quality": 11.009481316229783,
+    "processing_quality": 100.0,
+    "seo_score": 65.0,
+    "readability_score": 60.0
   }
 ]

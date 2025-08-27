@@ -376,6 +376,7 @@ class ReportService:
         seo_data = llm_analysis.get('seo') or {}
         readability_data = llm_analysis.get('readability') or {}
 
+
         # Map quality assessment to enum
         quality_mapping = {
             'excellent': QualityLevel.EXCELLENT,

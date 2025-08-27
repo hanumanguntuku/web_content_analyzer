@@ -245,6 +245,7 @@ def render_sidebar():
 
             # Compact history table (last 10)
             try:
+                import numpy as np
                 rows = []
                 for item in reversed(history[-10:]):
                     ts = item.get('timestamp')
@@ -266,6 +267,10 @@ def render_sidebar():
                     })
                 if rows:
                     df_side = pd.DataFrame(rows)
+                    # Replace '-' with np.nan for numeric columns to avoid Streamlit serialization warning
+                    for col in ['overall', 'seo', 'readability']:
+                        if col in df_side.columns:
+                            df_side[col] = pd.to_numeric(df_side[col], errors='coerce')
                     st.dataframe(df_side)
             except Exception:
                 # Sidebar should not crash the app if history has unexpected shape
@@ -406,6 +411,7 @@ def main():
                             errors.append(r)
                     st.success(f"Batch analysis complete. {len(successes)} succeeded, {len(errors)} failed.")
                     import pandas as pd
+                    import numpy as np
                     table_rows = []
                     for r in successes:
                         table_rows.append({
@@ -422,12 +428,16 @@ def main():
                         table_rows.append({
                             "URL": url,
                             "Title": "-",
-                            "Score": "-",
-                            "SEO Score": "-",
-                            "Readability": "-",
+                            "Score": np.nan,
+                            "SEO Score": np.nan,
+                            "Readability": np.nan,
                             "Status": f"❌ {msg[:40]}"
                         })
                     df = pd.DataFrame(table_rows)
+                    # Replace '-' with np.nan for numeric columns to avoid Streamlit serialization warning
+                    for col in ["Score", "SEO Score", "Readability"]:
+                        if col in df.columns:
+                            df[col] = pd.to_numeric(df[col], errors='coerce')
                     st.dataframe(df)
                     # Row selection for details
                     urls = [r.get("url", "") for r in successes]

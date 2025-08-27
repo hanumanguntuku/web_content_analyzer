@@ -384,101 +384,35 @@ class IntegratedAnalysisService:
         """Generate comprehensive analysis report"""
         try:
             logger.debug(f"Generating comprehensive report for {url}")
-            
-            # Prepare image information
-            image_info = []
-            if extract_images and hasattr(extracted_content, 'images') and extracted_content.images:
-                image_info = [
-                    {
-                        'src': img.get('src', ''),
-                        'alt': img.get('alt', ''),
-                        'title': img.get('title', ''),
-                        'size': img.get('size', 'unknown')
-                    }
-                    for img in extracted_content.images
-                ]
-            elif extract_images and hasattr(scraped_data, 'images'):
-                image_info = scraped_data.images
-            
-            # Prepare link information
-            link_info = []
-            if extract_links and hasattr(extracted_content, 'links') and extracted_content.links:
-                link_info = [
-                    {
-                        'href': link.get('href', ''),
-                        'text': link.get('text', ''),
-                        'title': link.get('title', ''),
-                        'type': link.get('type', 'internal')
-                    }
-                    for link in extracted_content.links
-                ]
-            elif extract_links and hasattr(scraped_data, 'links'):
-                link_info = scraped_data.links
-            
-            # Calculate metrics
-            # Support both dict and model for processed_content
-            def get_val(obj, key, default=0):
-                if isinstance(obj, dict):
-                    return obj.get(key, default)
-                return getattr(obj, key, default)
 
-            # Use values from processed_content and other data sources
-            metrics = AnalysisMetrics(
-                # Timing metrics
-                processing_time=get_val(processed_content, 'processing_time', processing_time),
-                response_time=getattr(scraped_data, 'load_time', 0.0),
-                scraping_time=getattr(scraped_data, 'load_time', 0.0),  # Approximating scraping time with load time
-                extraction_time=get_val(processed_content, 'extraction_time', 0.0),
-                analysis_time=get_val(processed_content, 'analysis_time', 0.0),
+            # Step 1: Run LLM-based analysis in parallel (summary, sentiment, seo, readability)
+            llm_tasks = {
+                "summary": self.llm_service.get_content_summary(processed_content.cleaned_text),
+                "sentiment": self.llm_service.get_sentiment_and_tone(processed_content.cleaned_text),
+                "seo": self.llm_service.get_seo_recommendations(
+                    processed_content.cleaned_text,
+                    getattr(scraped_data, 'title', ''),
+                    [kw['keyword'] for kw in getattr(processed_content, 'keywords', [])[:5]]
+                ),
+                "readability": self.llm_service.get_readability_and_accessibility(processed_content.cleaned_text)
+            }
+            import asyncio
+            llm_results = await asyncio.gather(*llm_tasks.values(), return_exceptions=True)
+            llm_analysis = dict(zip(llm_tasks.keys(), llm_results))
+            # Nullify failed tasks
+            for task, result in llm_analysis.items():
+                if isinstance(result, Exception):
+                    logger.error(f"LLM task '{task}' failed: {result}")
+                    llm_analysis[task] = None
 
-                # Content size and structure metrics
-                content_size=getattr(scraped_data, 'page_size', 0),
-                word_count=get_val(processed_content, 'word_count', 0),
-                character_count=get_val(processed_content, 'character_count', 0),
-                paragraph_count=get_val(processed_content, 'paragraph_count', 0),
-                sentence_count=get_val(processed_content, 'sentence_count', 0),
-                image_count=len(image_info),
-                link_count=len(link_info),
-
-                # Quality and scoring metrics
-                readability_score=get_val(processed_content, 'readability_score', 0.0),
-                performance_score=get_val(processed_content, 'performance_score', 
-                    self._calculate_performance_score(scraped_data, extracted_content, processed_content)),
-                content_quality_score=getattr(extracted_content, 'quality_score', 0.0) * 100,
-                extraction_quality=getattr(extracted_content, 'extraction_quality', 0.0),
-
-                # Technical metrics
-                http_status=getattr(scraped_data, 'status_code', 200),
-                redirect_count=getattr(scraped_data, 'redirect_count', 0)
+            # Step 2: Generate the final report, now including LLM analysis
+            analysis_report = await self.report_service.generate_analysis_report(
+                processed_content,
+                scraped_data,
+                url,
+                llm_analysis
             )
-            # Debug logging for processed_content and metrics
-            try:
-                logger.info(f"[DEBUG] processed_content (type={type(processed_content)}): {str(processed_content)}")
-            except Exception as e:
-                logger.warning(f"[DEBUG] Could not stringify processed_content: {e}")
-            try:
-                logger.info(f"[DEBUG] metrics: {metrics.dict() if hasattr(metrics, 'dict') else str(metrics)}")
-            except Exception as e:
-                logger.warning(f"[DEBUG] Could not stringify metrics: {e}")
-            
-            # Create comprehensive report
-            report = AnalysisReport(
-                url=url,
-                title=getattr(extracted_content, 'title', '') or getattr(scraped_data, 'title', ''),
-                description=getattr(processed_content, 'summary', ''),
-                keywords=getattr(processed_content, 'keywords', []),
-                content_type=(getattr(scraped_data, 'content_type', None) or 'text/html'),
-                language=getattr(processed_content, 'language', 'unknown'),
-                metrics=metrics,
-                images=image_info,
-                links=link_info,
-                metadata={
-                    'analysis_id': analysis_id,
-                    'scraped_at': datetime.utcnow().isoformat(),
-                    'processing_stage': ProcessingStage.COMPLETED.value,
-                }
-            )
-            return report
+            return analysis_report
         except Exception as e:
             logger.error(f"Failed to generate comprehensive report for {url}: {str(e)}", exc_info=True)
             raise ProcessingException(f"Report generation failed: {str(e)}", url=url)

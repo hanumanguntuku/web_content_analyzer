@@ -6,7 +6,29 @@ def render_error_display(result):
     st.error(result.get('message', 'An error occurred during analysis.'))
 
 def render_seo_analysis(result):
-    st.info('SEO analysis not implemented.')
+    # Try to get SEO data from content_analysis or directly from result
+    seo_data = None
+    if isinstance(result, dict):
+        # Try nested under content_analysis
+        content_analysis = result.get('content_analysis', {})
+        if content_analysis and (content_analysis.get('seo_score', 0) or content_analysis.get('seo_recommendations')):
+            seo_data = content_analysis
+        # Or directly on result
+        elif result.get('seo_score', 0) or result.get('seo_recommendations'):
+            seo_data = result
+
+    if seo_data:
+        st.markdown('## 📈 SEO Analysis')
+        st.metric('SEO Score', f"{seo_data.get('seo_score', 0):.1f}/100")
+        recommendations = seo_data.get('seo_recommendations', [])
+        if recommendations:
+            st.markdown('**Recommendations:**')
+            for rec in recommendations:
+                st.write(f'- {rec}')
+        else:
+            st.info('No SEO recommendations available.')
+    else:
+        st.info('SEO analysis not implemented.')
 
 def render_contact_info(result):
     st.info('Contact info display not implemented.')
