@@ -65,31 +65,45 @@ def render_url_input() -> Optional[Dict[str, Any]]:
     Returns:
         Dictionary with URL and analysis options, or None if invalid
     """
-    st.markdown("### 🔗 Enter Website URL")
-    
-    col1, col2 = st.columns([3, 1])
+    st.markdown("### 🔗 Enter Website URL(s)")
+    batch_mode = st.checkbox("Batch Mode: Analyze Multiple URLs", value=False)
     url = ""
-    with col1:
-        url = st.text_input(
-            "Website URL",
-            placeholder="https://example.com",
-            help="Enter the URL of the website you want to analyze",
-            label_visibility="collapsed"
+    urls = []
+    if batch_mode:
+        urls_text = st.text_area(
+            "Website URLs (one per line)",
+            placeholder="https://example.com\nhttps://another.com",
+            help="Enter one URL per line to analyze multiple sites."
         )
-    with col2:
+        urls = [u.strip() for u in urls_text.splitlines() if u.strip()]
+        if urls:
+            invalids = [u for u in urls if not validate_url_format(u)[0]]
+            if invalids:
+                st.error(f"Invalid URLs: {', '.join(invalids)}")
+                return None
+    else:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            url = st.text_input(
+                "Website URL",
+                placeholder="https://example.com",
+                help="Enter the URL of the website you want to analyze",
+                label_visibility="collapsed"
+            )
+        with col2:
+            if url:
+                is_valid, error_msg = validate_url_format(url)
+                if is_valid:
+                    st.success("✅ Valid URL")
+                else:
+                    st.error("❌ Invalid")
         if url:
             is_valid, error_msg = validate_url_format(url)
-            if is_valid:
-                st.success("✅ Valid URL")
-            else:
-                st.error("❌ Invalid")
-    if url:
-        is_valid, error_msg = validate_url_format(url)
-        if not is_valid:
-            st.error(f"⚠️ {error_msg}")
+            if not is_valid:
+                st.error(f"⚠️ {error_msg}")
+                return None
+        if not url:
             return None
-    if not url:
-        return None
     
     # Analysis options section
     st.markdown("### ⚙️ Analysis Options")
@@ -160,7 +174,17 @@ def render_url_input() -> Optional[Dict[str, Any]]:
             return None
     
     # Return analysis configuration
-    if url:
+    if batch_mode and urls:
+        return {
+            "batch_mode": True,
+            "urls": urls,
+            "deep_analysis": deep_analysis,
+            "extract_images": extract_images,
+            "extract_links": extract_links,
+            "max_content_size": max_content_size,
+            "timeout_seconds": timeout_seconds
+        }
+    elif url and (not batch_mode):
         return {
             "url": url,
             "deep_analysis": deep_analysis,

@@ -17,6 +17,39 @@ logger = logging.getLogger(__name__)
 
 class EnhancedAPIClient:
 
+    def analyze_batch(self, urls: list, deep_analysis=True, extract_images=True, extract_links=True) -> list:
+        """Analyze a batch of URLs via the batch endpoint."""
+        from src.components.enhanced_url_input import validate_url_format
+        valid_urls = [u for u in urls if validate_url_format(u)[0]]
+        if not valid_urls:
+            logger.warning("No valid URLs provided for batch analysis.")
+            return []
+        endpoint = "/api/v1/analyze/batch"
+        payload = [
+            {
+                "url": u,
+                "options": {},
+                "deep_analysis": deep_analysis,
+                "extract_media": extract_images,  # must match backend model
+                "extract_contacts": True,
+            }
+            for u in valid_urls
+        ]
+        logger.info(f"Batch payload: {payload}")
+        url = self._get_full_url(endpoint)
+        try:
+            resp = requests.post(url, json=payload, timeout=self.timeout)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.warning(f"Batch analysis failed: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    logger.warning(f"Backend response: {e.response.text}")
+                except Exception:
+                    pass
+            return []
+
     def get_analysis_history(self) -> list:
         """Get analysis history from backend.
 

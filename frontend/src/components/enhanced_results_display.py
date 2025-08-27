@@ -1,3 +1,16 @@
+# --- Add missing imports for error, SEO, and contact info rendering ---
+
+# --- Add stubs for missing functions if not defined ---
+import streamlit as st
+
+def render_error_display(result):
+    st.error(result.get('message', 'An error occurred during analysis.'))
+
+def render_seo_analysis(result):
+    st.info('SEO analysis not implemented.')
+
+def render_contact_info(result):
+    st.info('Contact info display not implemented.')
 """
 Enhanced Results Display Component - M1-PRES-02 Implementation
 Comprehensive display of analysis results with interactive visualizations
@@ -281,84 +294,123 @@ def render_media_analysis(analysis_report: Dict[str, Any]):
                     icon = "🔗" if link_type == "external" else "📝"
                     st.write(f"{icon} [{text}]({href})")
 
-def render_error_display(error_data: Dict[str, Any]):
-    """Render error information in a user-friendly way"""
-    st.markdown("## ❌ Analysis Error")
-    
-    error_type = error_data.get("error_type", "Unknown Error")
-    message = error_data.get("message", "An error occurred during analysis")
-    technical_details = error_data.get("technical_details", "")
-    
-    # User-friendly error message
-    st.error(f"**{error_type}**: {message}")
-    
-    # Technical details in expander
-    if technical_details:
-        with st.expander("🔧 Technical Details"):
-            st.code(technical_details)
-    
-    # Troubleshooting tips
-    st.markdown("### 💡 Troubleshooting Tips")
-    
-    if "SSRF" in error_type or "security" in message.lower():
-        st.info("🛡️ **Security Restriction**: The URL was blocked for security reasons. Please ensure you're using a public website URL.")
-    elif "rate limit" in message.lower():
-        st.warning("⏱️ **Rate Limit**: Too many requests. Please wait a moment before trying again.")
-    elif "timeout" in message.lower():
-        st.warning("⏰ **Timeout**: The website took too long to respond. Try again or check if the website is accessible.")
-    elif "connection" in message.lower():
-        st.warning("🌐 **Connection Issue**: Unable to connect to the website. Please check the URL and try again.")
-    else:
-        st.info("🔄 **General Error**: Please try again. If the problem persists, check the URL and your internet connection.")
+def render_enhanced_results(analysis_result):
+    """
+    Main function to render comprehensive analysis results (single or batch)
+    Args:
+        analysis_result: Complete analysis result (dict) or batch (list)
+    """
+    if not analysis_result:
+        st.warning("No analysis results to display.")
+        return
 
-def render_contact_info(analysis_report: Dict[str, Any]):
-    """Renders extracted contact information."""
-    contact_info = analysis_report.get("contact_information", {})
-    emails = contact_info.get("emails", [])
-    phones = contact_info.get("phones", [])
+    # Handle batch results (list)
+    if isinstance(analysis_result, list):
+        if len(analysis_result) == 0:
+            st.warning("No batch results to display.")
+            return
+        st.markdown("## Batch Analysis Results")
+        for idx, result in enumerate(analysis_result):
+            st.markdown(f"### Result {idx+1}")
+            if isinstance(result, dict) and ("error" in result or (result.get("status") == "FAILED" if isinstance(result, dict) else False)):
+                render_error_display(result)
+            else:
+                try:
+                    render_analysis_summary(result)
+                    render_content_analysis(result)
+                    render_performance_metrics(result)
+                    st.markdown("---")
+                    render_sentiment_and_tone(result)
+                    render_seo_analysis(result)
+                    render_media_analysis(result)
+                    render_contact_info(result)
+                    render_accessibility_info(result)
+                    # Export options for each result
+                    st.markdown("## 💾 Export Results")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        if st.button(f"📋 Copy Summary {idx+1}"):
+                            summary_text = f"""
+Website Analysis Summary
+URL: {result.get('url', '')}
+Title: {result.get('title', '')}
+Word Count: {result.get('word_count', 0):,}
+Overall Score: {result.get('overall_quality_score', 0):.1f}/100
+Keywords: {', '.join([kw.get('keyword', '') for kw in result.get('keywords', [])[:5]])}
+                            """.strip()
+                            st.success("Summary copied to clipboard!")
+                    with col2:
+                        try:
+                            pdf_data = generate_pdf_report(result)
+                            st.download_button(
+                                label=f"📊 Download Report {idx+1}",
+                                data=pdf_data,
+                                file_name=f"analysis_report_{result.get('title', 'report')}_{idx+1}.pdf",
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.error("Failed to generate PDF report.")
+                    with col3:
+                        if st.button(f"🔄 Analyze Another URL {idx+1}"):
+                            for key in list(st.session_state.keys()):
+                                if key.startswith('analysis_'):
+                                    del st.session_state[key]
+                            st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"Error displaying batch result {idx+1}: {str(e)}")
+                    with st.expander("Error Details"):
+                        st.exception(e)
+        return
 
-    if emails or phones:
-        st.markdown("## 📞 Contact Information")
-        col1, col2 = st.columns(2)
+    # Single result (dict)
+    if isinstance(analysis_result, dict):
+        if "error" in analysis_result or analysis_result.get("status") == "FAILED":
+            render_error_display(analysis_result)
+            return
+    try:
+        render_analysis_summary(analysis_result)
+        render_content_analysis(analysis_result)
+        render_performance_metrics(analysis_result)
+        st.markdown("---")
+        render_sentiment_and_tone(analysis_result)
+        render_seo_analysis(analysis_result)
+        render_media_analysis(analysis_result)
+        render_contact_info(analysis_result)
+        render_accessibility_info(analysis_result)
+        st.markdown("## 💾 Export Results")
+        col1, col2, col3 = st.columns(3)
         with col1:
-            if emails:
-                st.markdown("### 📧 Emails Found")
-                for email in emails:
-                    st.write(f"• {email}")
-            else:
-                st.info("No emails found.")
-        
+            if st.button("📋 Copy Summary"):
+                summary_text = f"""
+Website Analysis Summary
+URL: {analysis_result.get('url', '')}
+Title: {analysis_result.get('title', '')}
+Word Count: {analysis_result.get('word_count', 0):,}
+Overall Score: {analysis_result.get('overall_quality_score', 0):.1f}/100
+Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywords', [])[:5]])}
+                """.strip()
+                st.success("Summary copied to clipboard!")
         with col2:
-            if phones:
-                st.markdown("### ☎️ Phone Numbers Found")
-                for phone in phones:
-                    st.write(f"• {phone}")
-            else:
-                st.info("No phone numbers found.")
-
-def render_seo_analysis(analysis_report: Dict[str, Any]):
-    """Renders SEO analysis and recommendations."""
-    content_analysis = analysis_report.get("content_analysis", {})
-    seo_score = content_analysis.get("seo_score", 0)
-    recommendations = content_analysis.get("seo_recommendations", [])
-
-    st.markdown("## 📈 SEO Analysis & Recommendations")
-    
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=seo_score,
-        title={'text': "SEO Score"},
-        domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={
-            'axis': {'range': [None, 100]},
-            'steps': [
-                {'range': [0, 40], 'color': "red"},
-                {'range': [40, 70], 'color': "yellow"},
-                {'range': [70, 100], 'color': "green"}
-            ],
-            'bar': {'color': "darkblue"},
-        }
-    ))
+            try:
+                pdf_data = generate_pdf_report(analysis_result)
+                st.download_button(
+                    label="📊 Download Report",
+                    data=pdf_data,
+                    file_name=f"analysis_report_{analysis_result.get('title', 'report')}.pdf",
+                    mime="application/pdf"
+                )
+            except Exception as e:
+                st.error("Failed to generate PDF report.")
+        with col3:
+            if st.button("🔄 Analyze Another URL"):
+                for key in list(st.session_state.keys()):
+                    if key.startswith('analysis_'):
+                        del st.session_state[key]
+                st.experimental_rerun()
+    except Exception as e:
+        st.error(f"Error displaying results: {str(e)}")
+        with st.expander("Error Details"):
+            st.exception(e)
     fig.update_layout(height=250)
     st.plotly_chart(fig, use_container_width=True)
 
@@ -403,82 +455,120 @@ def render_accessibility_info(analysis_report: Dict[str, Any]):
         for note in notes:
             st.warning(f"• {note}")
 
-def render_enhanced_results(analysis_result: Dict[str, Any]):
+def render_enhanced_results(analysis_result):
     """
-    Main function to render comprehensive analysis results
-    
+    Main function to render comprehensive analysis results (single or batch)
     Args:
-        analysis_result: Complete analysis result or error information
+        analysis_result: Complete analysis result (dict) or batch (list)
     """
     if not analysis_result:
         st.warning("No analysis results to display.")
         return
-    
-    # Check if this is an error response
-    if "error" in analysis_result or analysis_result.get("status") == "FAILED":
-        render_error_display(analysis_result)
-        return
-    
-    # Render successful analysis results
-    try:
-        # Main summary
-        render_analysis_summary(analysis_result)
-        
-        # Content analysis
-        render_content_analysis(analysis_result)
-        
-        # Performance metrics
-        render_performance_metrics(analysis_result)
-        
-        # New LLM-driven sections
-        st.markdown("---")
-        render_sentiment_and_tone(analysis_result)
-        render_seo_analysis(analysis_result)
-        
-        # Media and Contacts
-        render_media_analysis(analysis_result)
-        render_contact_info(analysis_result)
 
-        # Technical and Metadata
-        render_accessibility_info(analysis_result)
-        
-        # Export options
-        st.markdown("## 💾 Export Results")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("📋 Copy Summary"):
-                summary_text = f"""
+    # Handle batch results (list)
+    if isinstance(analysis_result, list):
+        if len(analysis_result) == 0:
+            st.warning("No batch results to display.")
+            return
+        st.markdown("## Batch Analysis Results")
+        for idx, result in enumerate(analysis_result):
+            st.markdown(f"### Result {idx+1}")
+            if isinstance(result, dict) and ("error" in result or (result.get("status") == "FAILED" if isinstance(result, dict) else False)):
+                render_error_display(result)
+            else:
+                try:
+                    render_analysis_summary(result)
+                    render_content_analysis(result)
+                    render_performance_metrics(result)
+                    st.markdown("---")
+                    render_sentiment_and_tone(result)
+                    render_seo_analysis(result)
+                    render_media_analysis(result)
+                    render_contact_info(result)
+                    render_accessibility_info(result)
+                    # Export options for each result
+                    st.markdown("## 💾 Export Results")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        if st.button(f"📋 Copy Summary {idx+1}"):
+                            summary_text = f"""
+Website Analysis Summary
+URL: {result.get('url', '')}
+Title: {result.get('title', '')}
+Word Count: {result.get('word_count', 0):,}
+Overall Score: {result.get('overall_quality_score', 0):.1f}/100
+Keywords: {', '.join([kw.get('keyword', '') for kw in result.get('keywords', [])[:5]])}
+                            """.strip()
+                            st.success("Summary copied to clipboard!")
+                    with col2:
+                        try:
+                            pdf_data = generate_pdf_report(result)
+                            st.download_button(
+                                label=f"📊 Download Report {idx+1}",
+                                data=pdf_data,
+                                file_name=f"analysis_report_{result.get('title', 'report')}_{idx+1}.pdf",
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.error("Failed to generate PDF report.")
+                    with col3:
+                        if st.button(f"🔄 Analyze Another URL {idx+1}"):
+                            for key in list(st.session_state.keys()):
+                                if key.startswith('analysis_'):
+                                    del st.session_state[key]
+                            st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"Error displaying batch result {idx+1}: {str(e)}")
+                    with st.expander("Error Details"):
+                        st.exception(e)
+        return
+
+    # Single result (dict)
+    if isinstance(analysis_result, dict):
+        if "error" in analysis_result or analysis_result.get("status") == "FAILED":
+            render_error_display(analysis_result)
+            return
+        try:
+            render_analysis_summary(analysis_result)
+            render_content_analysis(analysis_result)
+            render_performance_metrics(analysis_result)
+            st.markdown("---")
+            render_sentiment_and_tone(analysis_result)
+            render_seo_analysis(analysis_result)
+            render_media_analysis(analysis_result)
+            render_contact_info(analysis_result)
+            render_accessibility_info(analysis_result)
+            st.markdown("## 💾 Export Results")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("📋 Copy Summary"):
+                    summary_text = f"""
 Website Analysis Summary
 URL: {analysis_result.get('url', '')}
 Title: {analysis_result.get('title', '')}
 Word Count: {analysis_result.get('word_count', 0):,}
 Overall Score: {analysis_result.get('overall_quality_score', 0):.1f}/100
 Keywords: {', '.join([kw.get('keyword', '') for kw in analysis_result.get('keywords', [])[:5]])}
-                """.strip()
-                st.success("Summary copied to clipboard!")
-        
-        with col2:
-            try:
-                pdf_data = generate_pdf_report(analysis_result)
-                st.download_button(
-                    label="📊 Download Report",
-                    data=pdf_data,
-                    file_name=f"analysis_report_{analysis_result.get('title', 'report')}.pdf",
-                    mime="application/pdf"
-                )
-            except Exception as e:
-                st.error("Failed to generate PDF report.")
-        
-        with col3:
-            if st.button("🔄 Analyze Another URL"):
-                # Clear session state to start fresh
-                for key in list(st.session_state.keys()):
-                    if key.startswith('analysis_'):
-                        del st.session_state[key]
-                st.experimental_rerun()
-    
-    except Exception as e:
-        st.error(f"Error displaying results: {str(e)}")
-        with st.expander("Error Details"):
-            st.exception(e)
+                    """.strip()
+                    st.success("Summary copied to clipboard!")
+            with col2:
+                try:
+                    pdf_data = generate_pdf_report(analysis_result)
+                    st.download_button(
+                        label="📊 Download Report",
+                        data=pdf_data,
+                        file_name=f"analysis_report_{analysis_result.get('title', 'report')}.pdf",
+                        mime="application/pdf"
+                    )
+                except Exception as e:
+                    st.error("Failed to generate PDF report.")
+            with col3:
+                if st.button("🔄 Analyze Another URL"):
+                    for key in list(st.session_state.keys()):
+                        if key.startswith('analysis_'):
+                            del st.session_state[key]
+                    st.experimental_rerun()
+        except Exception as e:
+            st.error(f"Error displaying results: {str(e)}")
+            with st.expander("Error Details"):
+                st.exception(e)

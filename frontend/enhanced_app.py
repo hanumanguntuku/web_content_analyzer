@@ -390,11 +390,64 @@ def main():
                 # Add to history
                 if 'analysis_history' not in st.session_state:
                     st.session_state.analysis_history = []
-                st.session_state.analysis_history.append({
-                    "url": analysis_config["url"],
-                    "timestamp": time.time(),
-                    "results": result
-                })
+                if analysis_config.get("batch_mode") and isinstance(result, list):
+                    # Separate successes and errors
+                    successes = []
+                    errors = []
+                    for r in result:
+                        if r and not r.get("error"):
+                            successes.append(r)
+                            st.session_state.analysis_history.append({
+                                "url": r.get("url", ""),
+                                "timestamp": time.time(),
+                                "results": r
+                            })
+                        else:
+                            errors.append(r)
+                    st.success(f"Batch analysis complete. {len(successes)} succeeded, {len(errors)} failed.")
+                    import pandas as pd
+                    table_rows = []
+                    for r in successes:
+                        table_rows.append({
+                            "URL": r.get("url", ""),
+                            "Title": r.get("title", ""),
+                            "Score": r.get("overall_quality_score", 0),
+                            "SEO Score": r.get("seo_score", 0),
+                            "Readability": r.get("readability_score", 0),
+                            "Status": "✅ Success"
+                        })
+                    for r in errors:
+                        url = r.get("url", "") if isinstance(r, dict) else "(unknown)"
+                        msg = r.get("message", "Unknown error") if isinstance(r, dict) else str(r)
+                        table_rows.append({
+                            "URL": url,
+                            "Title": "-",
+                            "Score": "-",
+                            "SEO Score": "-",
+                            "Readability": "-",
+                            "Status": f"❌ {msg[:40]}"
+                        })
+                    df = pd.DataFrame(table_rows)
+                    st.dataframe(df)
+                    # Row selection for details
+                    urls = [r.get("url", "") for r in successes]
+                    if urls:
+                        sel = st.selectbox("Select a URL to view details", options=urls)
+                        if sel:
+                            for r in successes:
+                                if r.get("url") == sel:
+                                    st.markdown(f"#### Details for {sel}")
+                                    render_enhanced_results(r)
+                                    break
+                    if errors:
+                        st.warning(f"{len(errors)} URLs failed. See table above for error messages.")
+                    return
+                else:
+                    st.session_state.analysis_history.append({
+                        "url": analysis_config["url"],
+                        "timestamp": time.time(),
+                        "results": result
+                    })
                 st.experimental_rerun()
             except Exception as e:
                 st.error(f"Analysis failed: {str(e)}")
