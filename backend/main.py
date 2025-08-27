@@ -16,6 +16,7 @@ from typing import Dict, Any
 
 from src.api.routes import router as api_router
 from src.api.batch_routes import router as batch_router
+from src.api.enhanced_routes import router as enhanced_router
 from src.utils.exceptions import WebAnalyzerException
 from config.settings import settings
 
@@ -193,6 +194,7 @@ async def simple_status() -> Dict[str, Any]:
 # shadowed by generic param routes (e.g. /analyze/{analysis_id}) in api_router.
 app.include_router(batch_router, prefix="/api/v1", tags=["Batch API"])
 app.include_router(api_router, prefix="/api/v1", tags=["API"])
+app.include_router(enhanced_router, prefix="/api/v1/enhanced", tags=["Enhanced API"])
 
 # Application entry point
 if __name__ == "__main__":
