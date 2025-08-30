@@ -1,0 +1,36 @@
+# Web Content Analyzer Backend Dependencies
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Web Scraping
+aiohttp==3.9.1
+beautifulsoup4==4.12.2
+lxml==4.9.3
+requests==2.31.0
+
+# Content Processing
+html2text==2020.1.16
+python-multipart==0.0.6
+nltk==3.8.1
+textstat==0.7.3
+
+# Security & Validation
+email-validator==2.1.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
+coverage==7.3.2
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# Environment
+python-dotenv==1.0.0

@@ -1,0 +1,26 @@
+# Web Content Analyzer Frontend Dependencies
+# Core Framework
+streamlit==1.28.2
+
+# HTTP Client
+requests==2.31.0
+httpx==0.25.2
+
+# Data Processing & Visualization
+pandas==2.1.4
+plotly==5.17.0
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# File Processing
+reportlab==4.0.7  # PDF generation
+openpyxl==3.1.2   # Excel export
+
+# UI Enhancements
+streamlit-option-menu==0.3.6
+streamlit-aggrid==0.3.4.post3
+
+# Utilities
+python-dotenv==1.0.0
+validators==0.22.0
+nltk==3.8.1
